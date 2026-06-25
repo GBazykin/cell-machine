@@ -13,6 +13,7 @@ Desktop.ini
 *.log
 *.tmp
 *.temp
+*.zip
 
 # Dependency/build folders if the static app is later wrapped in a toolchain
 node_modules/
