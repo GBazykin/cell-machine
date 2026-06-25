@@ -240,16 +240,17 @@ const levels = [
   {
     title: "Build A Gradient",
     tag: "Active Transport",
-    prompt: "Start with equal ion content on both sides. Use ion pumps to move ions outward and build a stored gradient. Watch the ATP cost.",
+    prompt: "Start with equal ion content on both sides. Use at least two ion pumps to move ions outward and build a stored gradient. Watch the ATP cost.",
     parts: ["pump"],
     molecules: "balancedIon",
     targetLabel: "gradient",
     target: 78,
+    requiredPartCounts: { pump: 2 },
     startAtp: 90,
     startGradient: 0,
     startPotential: 0,
-    success: "The pump spent ATP to build a gradient. That stored energy can power later work.",
-    hint: "One pump can work, but two pumps build the gradient faster."
+    success: "The pumps spent ATP to build a gradient. That stored energy can power later work.",
+    hint: "Place two or more pumps so the spread-out ions can reach a local pump zone."
   },
   {
     title: "Signal To Open",
@@ -1019,9 +1020,29 @@ function availableAtpCount() {
   return (state.molecules || []).filter((m) => !m.used && m.kind === "atp").length;
 }
 
+function partCount(type) {
+  return (state.parts || []).filter((part) => part.type === type).length;
+}
+
+function requiredPartCountsMet(level) {
+  const requirements = level.requiredPartCounts || {};
+  return Object.entries(requirements).every(([type, required]) => partCount(type) >= required);
+}
+
+function requiredPartCountsText(level) {
+  const requirements = level.requiredPartCounts || {};
+  const entries = Object.entries(requirements);
+  if (!entries.length) return "";
+  return entries.map(([type, required]) => `${partTypes[type]?.name || type} ${partCount(type)} / ${required}`).join("; ");
+}
+
 function targetText(level, gradientMetric) {
   if (level.targetLabel === "tutorial") return state.won ? "Ready" : "Try the controls";
-  if (level.targetLabel === "gradient") return `${gradientMetric.label} ${Math.round(gradientMetric.value)} / ${level.target}`;
+  if (level.targetLabel === "gradient") {
+    const requiredParts = requiredPartCountsText(level);
+    const gradientText = `${gradientMetric.label} ${Math.round(gradientMetric.value)} / ${level.target}`;
+    return requiredParts ? `${requiredParts}; ${gradientText}` : gradientText;
+  }
   if (level.targetLabel === "ATP") return `ATP ${Math.round(state.atp)} / ${level.target}`;
   if (level.targetLabel === "potential") return `V ${Math.round(state.potential)} / ${level.target} +/- ${level.tolerance || 4} mV`;
   if (level.targetLabel === "reset") {
@@ -2571,7 +2592,7 @@ function checkWin(level) {
   const gradientMetric = levelGradientMetric(level);
   let goalReached = false;
   if (level.targetLabel === "tutorial") goalReached = state.time >= 0.6 || state.parts.length > 0;
-  else if (level.targetLabel === "gradient") goalReached = gradientMetric.value >= level.target;
+  else if (level.targetLabel === "gradient") goalReached = gradientMetric.value >= level.target && requiredPartCountsMet(level);
   else if (level.targetLabel === "ATP") goalReached = state.atp >= level.target;
   else if (level.targetLabel === "potential") goalReached = Math.abs(state.potential - level.target) <= (level.tolerance || 4);
   else if (level.targetLabel === "reset") goalReached = state.potential <= level.target + (level.tolerance || 4) && gradientMetric.value >= (level.gradientTarget || 55);
