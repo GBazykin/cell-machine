@@ -1,0 +1,466 @@
+:root {
+  --ink: #15202b;
+  --muted: #596674;
+  --line: #cfd8dc;
+  --paper: #f6f8f5;
+  --panel: #ffffff;
+  --outside: #d7ecff;
+  --cell: #dff4de;
+  --membrane-a: #f6b26b;
+  --membrane-b: #e69138;
+  --accent: #0f766e;
+  --accent-dark: #115e59;
+  --warn: #b45309;
+  --good: #15803d;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  min-height: 36px;
+  padding: 0 12px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.app-shell {
+  width: min(1440px, 100%);
+  height: 100vh;
+  margin: 0 auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 50px;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--line);
+}
+
+.kicker {
+  margin: 0 0 3px;
+  color: var(--accent-dark);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0;
+  font-size: clamp(1.2rem, 1.9vw, 1.65rem);
+  line-height: 1.1;
+}
+
+h2 {
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.level-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.icon-button {
+  width: 36px;
+  padding: 0;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.game-layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 285px) minmax(390px, 1fr) minmax(210px, 265px);
+  gap: 8px;
+  overflow: hidden;
+}
+
+.panel {
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 10px;
+}
+
+.mission-panel,
+.toolbox-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: auto;
+}
+
+.mission-heading h2 {
+  margin-bottom: 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #e3f4ef;
+  color: var(--accent-dark);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+#levelPrompt {
+  color: var(--muted);
+  line-height: 1.3;
+  margin-bottom: 0;
+  font-size: 0.88rem;
+}
+
+.tutorial-panel {
+  display: grid;
+  gap: 7px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 0;
+  position: relative;
+  z-index: 3;
+}
+
+.tutorial-step {
+  display: grid;
+  gap: 2px;
+  font-size: 0.82rem;
+  line-height: 1.24;
+}
+
+.tutorial-step small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.tutorial-step strong {
+  color: var(--accent-dark);
+}
+
+.tutorial-step span {
+  color: var(--muted);
+}
+
+.tutorial-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+body.tutorial-active .topbar,
+body.tutorial-active .board-wrap,
+body.tutorial-active .toolbox-panel,
+body.tutorial-active .mission-heading,
+body.tutorial-active #levelPrompt,
+body.tutorial-active .meters,
+body.tutorial-active .potential-plot,
+body.tutorial-active .controls,
+body.tutorial-active .feedback {
+  opacity: 0.34;
+  filter: grayscale(0.45);
+  transition: opacity 140ms ease, filter 140ms ease, box-shadow 140ms ease;
+}
+
+body.tutorial-active .tutorial-panel {
+  opacity: 1;
+  filter: none;
+}
+
+body[data-tutorial-target="mission"] .mission-heading,
+body[data-tutorial-target="mission"] #levelPrompt,
+body[data-tutorial-target="mission"] .meters,
+body[data-tutorial-target="board"] .board-wrap,
+body[data-tutorial-target="parts"] .toolbox-panel,
+body[data-tutorial-target="controls"] .controls {
+  opacity: 1;
+  filter: none;
+}
+
+body[data-tutorial-target="mission"] .mission-panel,
+body[data-tutorial-target="board"] .board-wrap,
+body[data-tutorial-target="parts"] .toolbox-panel,
+body[data-tutorial-target="controls"] .controls {
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.72), 0 10px 34px rgba(15, 118, 110, 0.18);
+}
+
+.meters {
+  display: grid;
+  gap: 6px;
+}
+
+.meter-row {
+  display: grid;
+  grid-template-columns: 88px minmax(72px, 1fr) minmax(82px, auto);
+  gap: 6px;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.meter-row > strong:nth-child(2):last-child {
+  grid-column: 2 / -1;
+}
+
+meter {
+  width: 100%;
+  height: 12px;
+}
+
+.potential-plot {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px;
+  background: #fbfcfc;
+}
+
+.plot-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.plot-heading strong {
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+#potentialPlot {
+  display: block;
+  width: 100%;
+  height: 96px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.controls button {
+  flex: 1 1 74px;
+  min-width: 74px;
+}
+
+.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.primary:hover {
+  background: var(--accent-dark);
+}
+
+.feedback {
+  min-height: 58px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  color: var(--muted);
+  line-height: 1.28;
+  background: #fbfcfc;
+  font-size: 0.86rem;
+}
+
+.feedback.success {
+  border-color: #86efac;
+  color: var(--good);
+  background: #f0fdf4;
+}
+
+.feedback.warning {
+  border-color: #fcd34d;
+  color: var(--warn);
+  background: #fffbeb;
+}
+
+.board-wrap {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+#gameCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  touch-action: none;
+}
+
+.drop-hint {
+  position: absolute;
+  left: 18px;
+  bottom: 16px;
+  max-width: 360px;
+  padding: 9px 11px;
+  border: 1px solid rgba(21, 32, 43, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--muted);
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.toolbox {
+  display: grid;
+  gap: 7px;
+}
+
+.part-card {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px;
+  background: #fff;
+  cursor: grab;
+  user-select: none;
+}
+
+.part-card:hover {
+  border-color: var(--accent);
+}
+
+.part-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 900;
+}
+
+.part-card strong {
+  display: block;
+  font-size: 0.84rem;
+  line-height: 1.15;
+}
+
+.part-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.18;
+}
+
+.part-info {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.part-info strong {
+  color: var(--ink);
+}
+
+@media (max-width: 980px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+
+  .board-wrap {
+    min-height: 360px;
+  }
+
+  #gameCanvas {
+    min-height: 360px;
+  }
+
+  .toolbox {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .app-shell {
+    padding: 10px;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .toolbox {
+    grid-template-columns: 1fr;
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
+  }
+
+  .meter-row {
+    grid-template-columns: 82px 1fr 72px;
+  }
+}
