@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cell Machine</title>
+    <link rel="stylesheet" href="styles.css?v=130" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar" aria-label="Game header">
+        <div>
+          <p class="kicker">Cell Machine</p>
+          <h1>Build the cell machinery</h1>
+        </div>
+        <div class="level-nav" aria-label="Level controls">
+          <button class="icon-button" id="prevLevel" title="Previous level" aria-label="Previous level">&lt;</button>
+          <span id="levelCounter">Unit 1 Level 1</span>
+          <button class="icon-button" id="nextLevel" title="Next level" aria-label="Next level">&gt;</button>
+        </div>
+      </section>
+
+      <section class="game-layout">
+        <aside class="panel mission-panel">
+          <div class="mission-heading">
+            <span class="badge" id="levelTag">Membrane Transport</span>
+            <h2 id="levelTitle">Oxygen Diffusion</h2>
+          </div>
+          <p id="levelPrompt"></p>
+          <div class="tutorial-panel is-hidden" id="tutorialPanel"></div>
+          <div class="meters" aria-label="Cell meters">
+            <div class="meter-row">
+              <span>ATP</span>
+              <meter id="atpMeter" min="0" max="100" value="50"></meter>
+              <strong id="atpValue">50</strong>
+            </div>
+            <div class="meter-row" id="potentialRow">
+              <span>Potential</span>
+              <meter id="potentialMeter" min="-80" max="60" value="0"></meter>
+              <strong id="potentialValue">0 mV</strong>
+            </div>
+            <div class="meter-row">
+              <span id="gradientLabel">Gradient</span>
+              <meter id="gradientMeter" min="0" max="100" value="40"></meter>
+              <strong id="gradientValue">40</strong>
+            </div>
+            <div class="meter-row">
+              <span>Target</span>
+              <strong id="targetValue">0 / 8 O2</strong>
+            </div>
+          </div>
+          <div class="potential-plot" id="potentialPlotPanel" aria-label="Action potential over time">
+            <div class="plot-heading">
+              <span>Action potential</span>
+              <strong id="plotReadout">0.0s / 0 mV</strong>
+            </div>
+            <canvas id="potentialPlot" width="320" height="150"></canvas>
+          </div>
+          <div class="controls">
+            <button id="runButton" class="primary">Run</button>
+            <button id="pauseButton">Pause</button>
+            <button id="resetButton">Reset</button>
+            <button id="clearButton">Clear all</button>
+          </div>
+          <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+        </aside>
+
+        <section class="board-wrap" aria-label="Cell assembly board">
+          <canvas id="gameCanvas" width="960" height="620"></canvas>
+          <div class="drop-hint" id="dropHint">Drag parts onto the membrane, then press Run.</div>
+        </section>
+
+        <aside class="panel toolbox-panel">
+          <h2>Parts</h2>
+          <div class="toolbox" id="toolbox" aria-label="Available cell parts"></div>
+          <div class="part-info" id="partInfo">
+            <strong>Tip</strong>
+            <p>Parts work best when placed across the membrane. Pumps consume ATP; synthase needs a stored gradient.</p>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="game.js?v=130"></script>
+  </body>
+</html>
