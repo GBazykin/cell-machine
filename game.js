@@ -979,7 +979,8 @@ function updatePauseButton() {
 }
 
 function potentialUiHiddenForLevel(level) {
-  return level.molecules === "adrenalineCascade" || level.tutorial;
+  const voltageTargets = ["potential", "reset", "sequence", "doubleSpike", "propagation"];
+  return level.tutorial || !voltageTargets.includes(level.targetLabel);
 }
 
 function applyLevelVisibility(level) {
@@ -1920,7 +1921,7 @@ function markVoltageGateRecruited(part) {
 function moveResetIon(m, dt, b) {
   const slotType = m.kind === "sodium" && m.inside ? "boundNa" : m.kind === "potassium" && !m.inside ? "boundK" : null;
   if (!slotType || state.atp < 4) return;
-  const pump = m.boundPump ? state.parts.find((part) => part.id === m.boundPump) : bestPumpForIon(m, slotType);
+  const pump = m.boundPump ? state.parts.find((part) => part.id === m.boundPump) : bestPumpForIon(m, slotType, b);
   if (!pump) return;
 
   bindIonAtPump(m, pump, dt, b, slotType);
@@ -1950,11 +1951,12 @@ function pumpOccupancy(pump) {
   return pump.boundNa.filter(Boolean).length + pump.boundK.filter(Boolean).length;
 }
 
-function bestPumpForIon(m, slotType) {
+function bestPumpForIon(m, slotType, b) {
   let best = null;
   let bestScore = Infinity;
   for (const pump of state.parts.filter((part) => part.type === "sodiumPotassiumPump")) {
     if (!pumpHasOpenSlot(pump, slotType)) continue;
+    if (!ionInPumpAttractionZone(m, pump, slotType, b)) continue;
     const d = distance(m.x, m.y, pump.x, pump.y);
     const score = d - pumpOccupancy(pump) * 220;
     if (score < bestScore) {
@@ -1963,6 +1965,15 @@ function bestPumpForIon(m, slotType) {
     }
   }
   return best;
+}
+
+function ionInPumpAttractionZone(m, pump, slotType, b) {
+  if (slotType === "boundNa" && !m.inside) return false;
+  if (slotType === "boundK" && m.inside) return false;
+  const slotIndex = nearestOpenPumpSlot(m, pump, slotType, b);
+  if (slotIndex === -1) return false;
+  const target = pumpSlotPosition(pump, slotType, slotIndex, b);
+  return distance(m.x, m.y, target.x, target.y) <= LOCAL_ATTRACTION_X;
 }
 
 function pumpSlotPosition(pump, slotType, index, b) {
@@ -1990,6 +2001,7 @@ function bindIonAtPump(m, pump, dt, b, slotType) {
     m.vy = 0;
     return;
   }
+  if (!ionInPumpAttractionZone(m, pump, slotType, b)) return;
 
   m.vx += Math.sign(target.x - m.x) * 168 * dt;
   m.vy += Math.sign(target.y - m.y) * 172 * dt;
@@ -2073,7 +2085,7 @@ function moveIonTowardPump(m, part, dt, b, direction, onCross) {
 }
 
 function moveIonForPump(m, dt, b) {
-  const pump = nearestPart("pump", m.laneX || m.x, m.y);
+  const pump = nearestPart("pump", m.laneX || m.x, m.y, (part) => genericPumpCanAttractIon(m, part, b));
   if (!pump) {
     m.vx += Math.sign((m.laneX || m.x) - m.x) * 18 * dt;
     m.vx = Math.max(-34, Math.min(34, m.vx));
@@ -2104,6 +2116,12 @@ function moveIonForPump(m, dt, b) {
       state.flash = 0.25;
     }
   }
+}
+
+function genericPumpCanAttractIon(m, pump, b) {
+  if (!m.inside) return false;
+  const target = { x: pump.x, y: b.membraneY + b.membraneH + 18 };
+  return distance(m.x, m.y, target.x, target.y) <= LOCAL_ATTRACTION_X;
 }
 
 function partLaneTarget(part, molecule) {
@@ -2625,8 +2643,9 @@ function draw() {
 }
 
 function drawBackground(b) {
+  const level = levels[levelIndex];
   updateElectricState();
-  if (levels[levelIndex].localVoltage) {
+  if (level.localVoltage) {
     drawLaneCompartments(b);
   } else {
     const colors = compartmentColors();
@@ -2637,17 +2656,17 @@ function drawBackground(b) {
   }
 
   drawLipidBilayer(b);
-  if (levels[levelIndex].myelinated) drawMyelinSheath(b, levels[levelIndex]);
-  if (levels[levelIndex].localVoltage) drawLaneVoltageLabels(b);
+  if (level.myelinated) drawMyelinSheath(b, level);
+  if (level.localVoltage) drawLaneVoltageLabels(b);
 
   ctx.fillStyle = "rgba(21, 32, 43, 0.58)";
   ctx.font = "700 15px Inter, sans-serif";
   ctx.fillText("Outside cell", 22, 32);
   ctx.fillText("Cytoplasm", 22, b.height - 24);
-  if (!levels[levelIndex].localVoltage && levels[levelIndex].molecules !== "adrenalineCascade") ctx.fillText(`${Math.round(state.potential)} mV`, b.width - 86, b.membraneY + b.membraneH + 24);
+  if (!level.localVoltage && !potentialUiHiddenForLevel(level)) ctx.fillText(`${Math.round(state.potential)} mV`, b.width - 86, b.membraneY + b.membraneH + 24);
 
   drawCellOrganelles(b);
-  if (levels[levelIndex].tutorial) drawTutorialCallouts(b);
+  if (level.tutorial) drawTutorialCallouts(b);
 }
 
 function drawTutorialCallouts(b) {
