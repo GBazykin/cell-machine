@@ -24,12 +24,107 @@ const el = {
   pauseButton: document.getElementById("pauseButton"),
   resetButton: document.getElementById("resetButton"),
   clearButton: document.getElementById("clearButton"),
+  soundButton: document.getElementById("soundButton"),
   prevLevel: document.getElementById("prevLevel"),
   nextLevel: document.getElementById("nextLevel"),
   dropHint: document.getElementById("dropHint"),
   tutorialPanel: document.getElementById("tutorialPanel"),
   partInfo: document.getElementById("partInfo")
 };
+
+const sound = {
+  enabled: loadSoundPreference(),
+  ctx: null,
+  master: null,
+  lastPlayed: {}
+};
+
+const soundPresets = {
+  toggle: { freq: 640, endFreq: 920, type: "sine", duration: 0.11, volume: 0.09, throttle: 0 },
+  ui: { freq: 470, endFreq: 560, type: "triangle", duration: 0.08, volume: 0.06, throttle: 0.04 },
+  run: { freq: 260, endFreq: 520, type: "sine", duration: 0.16, volume: 0.08, throttle: 0.08 },
+  pause: { freq: 420, endFreq: 280, type: "sine", duration: 0.12, volume: 0.07, throttle: 0.08 },
+  reset: { freq: 310, endFreq: 230, type: "triangle", duration: 0.13, volume: 0.07, throttle: 0.08 },
+  install: { freq: 540, endFreq: 700, type: "triangle", duration: 0.1, volume: 0.07, throttle: 0.06 },
+  remove: { freq: 330, endFreq: 190, type: "triangle", duration: 0.12, volume: 0.07, throttle: 0.06 },
+  neutralDiffusion: { freq: 520, endFreq: 500, type: "sine", duration: 0.07, volume: 0.045, throttle: 0.16 },
+  transportIn: { freq: 720, endFreq: 420, type: "sine", duration: 0.09, volume: 0.055, throttle: 0.1 },
+  transportOut: { freq: 430, endFreq: 760, type: "sine", duration: 0.09, volume: 0.055, throttle: 0.1 },
+  pumpBind: { freq: 240, endFreq: 300, type: "square", duration: 0.055, volume: 0.045, throttle: 0.08 },
+  pumpCycle: { freq: 190, endFreq: 480, type: "sawtooth", duration: 0.17, volume: 0.07, throttle: 0.16 },
+  ligandRelease: { freq: 840, endFreq: 420, type: "triangle", duration: 0.18, volume: 0.07, throttle: 0.18 },
+  ligandBind: { freq: 620, endFreq: 620, type: "triangle", duration: 0.08, volume: 0.055, throttle: 0.1 },
+  proteinRelease: { freq: 210, endFreq: 390, type: "triangle", duration: 0.16, volume: 0.065, throttle: 0.12 },
+  dock: { freq: 360, endFreq: 520, type: "square", duration: 0.08, volume: 0.052, throttle: 0.12 },
+  camp: { freq: 920, endFreq: 1220, type: "sine", duration: 0.08, volume: 0.048, throttle: 0.08 },
+  phosphorylate: { freq: 760, endFreq: 1020, type: "triangle", duration: 0.13, volume: 0.065, throttle: 0.14 },
+  glycogen: { freq: 300, endFreq: 170, type: "square", duration: 0.075, volume: 0.05, throttle: 0.09 },
+  win: { freq: 520, endFreq: 1040, type: "sine", duration: 0.28, volume: 0.095, throttle: 0.3 },
+  fail: { freq: 220, endFreq: 150, type: "sawtooth", duration: 0.22, volume: 0.07, throttle: 0.25 }
+};
+
+function loadSoundPreference() {
+  try {
+    return localStorage.getItem("cellMachineSound") !== "off";
+  } catch (error) {
+    return true;
+  }
+}
+
+function saveSoundPreference() {
+  try {
+    localStorage.setItem("cellMachineSound", sound.enabled ? "on" : "off");
+  } catch (error) {
+    // Local storage can be unavailable in private or restricted browser contexts.
+  }
+}
+
+function updateSoundButton() {
+  if (!el.soundButton) return;
+  el.soundButton.textContent = sound.enabled ? "Sound on" : "Sound off";
+  el.soundButton.setAttribute("aria-pressed", sound.enabled ? "true" : "false");
+}
+
+function ensureAudioContext() {
+  if (!sound.enabled) return null;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return null;
+  if (!sound.ctx) {
+    sound.ctx = new AudioContext();
+    sound.master = sound.ctx.createGain();
+    sound.master.gain.value = 0.16;
+    sound.master.connect(sound.ctx.destination);
+  }
+  if (sound.ctx.state === "suspended") sound.ctx.resume();
+  return sound.ctx;
+}
+
+function playSound(name, intensity = 1, force = false) {
+  if (!sound.enabled) return;
+  const preset = soundPresets[name] || soundPresets.ui;
+  const audio = ensureAudioContext();
+  if (!audio || !sound.master) return;
+  const now = audio.currentTime;
+  const throttle = preset.throttle ?? 0.08;
+  const lastPlayed = sound.lastPlayed[name];
+  if (!force && lastPlayed !== undefined && now - lastPlayed < throttle) return;
+  sound.lastPlayed[name] = now;
+
+  const osc = audio.createOscillator();
+  const gain = audio.createGain();
+  const duration = preset.duration || 0.1;
+  const volume = (preset.volume || 0.05) * Math.max(0.25, Math.min(1.4, intensity));
+  osc.type = preset.type || "sine";
+  osc.frequency.setValueAtTime(preset.freq, now);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(20, preset.endFreq || preset.freq), now + duration);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(volume, now + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  osc.connect(gain);
+  gain.connect(sound.master);
+  osc.start(now);
+  osc.stop(now + duration + 0.02);
+}
 
 const partTypes = {
   channel: {
@@ -1480,6 +1575,7 @@ function addPart(type, x, y) {
   state.freeRun = false;
   updateLevelUi();
   setFeedback("Part installed. Press Run to test the assembly.", "");
+  playSound("install");
   return true;
 }
 
@@ -1534,6 +1630,7 @@ function removeSelectedPart() {
   state.goalReachedAt = null;
   updateLevelUi();
   setFeedback(`${partTypes[part.type].name} removed.`, "");
+  playSound("remove");
 }
 
 function screenToCanvas(event) {
@@ -1624,6 +1721,7 @@ function releaseScheduledAdrenaline(level, b) {
   state.adrReleased = true;
   state.adrReleaseIndex = 1;
   setFeedback("Adrenaline jetted into the outside compartment.", "");
+  playSound("ligandRelease");
 }
 
 function releaseScheduledAcetylcholine(level, b) {
@@ -1645,6 +1743,7 @@ function releaseScheduledAcetylcholine(level, b) {
   state.achReleased = true;
   state.achReleaseIndex = index + 1;
   setFeedback(level.achReleaseSide === "left" ? `ACh pulse ${state.achReleaseIndex} jetted in from the left.` : `ACh pulse ${state.achReleaseIndex} jetted into the outside compartment.`, "");
+  playSound("ligandRelease");
 }
 
 function achReleaseSchedule(level) {
@@ -1763,6 +1862,7 @@ function moveMolecules(dt, level, b) {
       }
       state.flash = 0.25;
       markVoltageGateRecruited(openPart);
+      playSound(m.kind === "proton" ? "pumpCycle" : "transportIn");
     }
 
     if (level.molecules === "oxygen" && level.parts.length === 0) {
@@ -1842,6 +1942,7 @@ function moveAcetylcholine(m, dt, b) {
       m.y = bindY;
       m.vx = 0;
       m.vy = 0;
+      playSound("ligandBind");
       return;
     }
   } else {
@@ -1878,6 +1979,7 @@ function moveOxygenThroughMembrane(m, dt, b) {
     m.vx = Math.max(-52, Math.min(52, m.vx));
     m.membraneDelay = randomRange(0.4, 1.7);
     state.imported = oxygenCounts(true).inside;
+    playSound("neutralDiffusion");
   } else if (m.inside && m.y <= b.membraneY && difference < 0 && m.membraneDelay <= 0 && Math.random() < crossingChance * dt) {
     m.inside = false;
     m.vy = -Math.max(10, Math.abs(m.vy) * 0.72 + randomRange(4, 16));
@@ -1885,6 +1987,7 @@ function moveOxygenThroughMembrane(m, dt, b) {
     m.vx = Math.max(-52, Math.min(52, m.vx));
     m.membraneDelay = randomRange(0.4, 1.7);
     state.imported = oxygenCounts(true).inside;
+    playSound("neutralDiffusion");
   }
 }
 
@@ -1924,6 +2027,7 @@ function movePositiveOut(m, dt, b, partType, energyCost, onCross) {
       onCross();
       state.imported += 1;
       markVoltageGateRecruited(part);
+      playSound(partType === "protonPump" ? "pumpCycle" : "transportOut");
     }
   }
 }
@@ -1953,6 +2057,7 @@ function movePositiveIn(m, dt, b, partType, onCross) {
     onCross();
     state.imported += 1;
     markVoltageGateRecruited(part);
+    playSound("transportIn");
   }
 }
 
@@ -2086,6 +2191,7 @@ function bindIonAtPump(m, pump, dt, b, slotType) {
     m.vx = 0;
     m.vy = 0;
     pump.pulse = 0.35;
+    playSound("pumpBind");
   }
 }
 
@@ -2130,6 +2236,7 @@ function exchangePumpCycle(pump, b) {
   state.gradient = Math.min(100, state.gradient + 6);
   state.imported += 5;
   state.flash = 0.25;
+  playSound("pumpCycle");
 }
 
 function moveIonTowardPump(m, part, dt, b, direction, onCross) {
@@ -2151,6 +2258,7 @@ function moveIonTowardPump(m, part, dt, b, direction, onCross) {
     onCross();
     state.imported += 1;
     state.flash = 0.25;
+    playSound(direction === "in" ? "transportIn" : "transportOut");
   }
 }
 
@@ -2184,6 +2292,7 @@ function moveIonForPump(m, dt, b) {
       state.gradient = Math.min(100, state.gradient + 5);
       state.imported = Math.round(state.gradient);
       state.flash = 0.25;
+      playSound("pumpCycle");
     }
   }
 }
@@ -2313,6 +2422,7 @@ function updateAdrenalineReceptorBinding(dt, receptor) {
   receptor.pulse = 0.6;
   receptor.boundAdrenaline = adrenaline;
   cascade.receptor = true;
+  playSound("ligandBind");
 }
 
 function updateGProteinActivation(dt, gProtein, receptor, b) {
@@ -2335,6 +2445,7 @@ function releaseGAlpha(gProtein, b) {
   alpha.vy = randomRange(16, 34);
   alpha.sourceGProtein = gProtein.id;
   state.molecules.push(alpha);
+  playSound("proteinRelease");
 }
 
 function updateGAlphaDocking(dt, cyclase, b) {
@@ -2351,6 +2462,7 @@ function updateGAlphaDocking(dt, cyclase, b) {
     alpha.boundCyclase = cyclase.id;
     alpha.used = true;
     cyclase.pulse = 0.5;
+    playSound("dock");
   }
 }
 
@@ -2377,6 +2489,7 @@ function maybeSpawnCamp(cyclase, b, dt) {
   molecule.vy = randomRange(34, 58);
   state.molecules.push(molecule);
   spawnEnergyProduct("pyrophosphate", cyclase.x + 18, target.y + 12, b);
+  playSound("camp");
 }
 
 function spawnEnergyProduct(kind, x, y, b) {
@@ -2427,6 +2540,7 @@ function updateAllPkaCampBinding(dt, b) {
       camp.boundPka = pka.id;
       camp.used = true;
       pka.pulse = 0.35;
+      playSound("ligandBind");
     }
   }
 
@@ -2470,6 +2584,7 @@ function releasePkaCatalyticSubunits(pka, b) {
     catalytic.sourcePka = pka.id;
     state.molecules.push(catalytic);
   });
+  playSound("proteinRelease");
 }
 
 function ensurePhosphorylaseKinaseSlots(phosphorylaseKinase) {
@@ -2497,6 +2612,7 @@ function updateAllCatalyticSubunits(dt, b) {
       catalytic.boundPhosphorylaseKinase = phosphorylaseKinase.id;
       catalytic.used = true;
       phosphorylaseKinase.pulse = 0.42;
+      playSound("dock");
     }
   }
 
@@ -2550,6 +2666,7 @@ function breakGlycogen(dt, phosphorylase, b) {
   cascade.glucose += 1;
   cascade.glucoseReleased += 1;
   phosphorylase.pulse = 0.55;
+  playSound("glycogen");
 }
 
 function pullGlycogenChainTowardPhosphorylase(release, dt) {
@@ -2607,6 +2724,7 @@ function phosphorylatePartWithAtp(dt, part, offsetX, offsetY, flag, b) {
   part.phosphateMarks = (part.phosphateMarks || 0) + 1;
   part.pulse = Math.max(part.pulse || 0, 0.55);
   spawnEnergyProduct("adp", target.x - 16, target.y + 10, b);
+  playSound("phosphorylate");
   return true;
 }
 
@@ -2668,6 +2786,7 @@ function checkWin(level) {
     state.paused = false;
     updatePauseButton();
     setFeedback(level.success, "success");
+    playSound("win", 1, true);
   } else if (state.time >= (level.timeout || 8) && !state.won) {
     recordPotentialSample();
     updateMeters();
@@ -2676,6 +2795,7 @@ function checkWin(level) {
     state.running = false;
     state.paused = false;
     updatePauseButton();
+    playSound("fail");
   }
 }
 
@@ -3590,6 +3710,7 @@ window.addEventListener("pointerup", () => {
 });
 
 el.runButton.addEventListener("click", () => {
+  playSound("run", 1, true);
   const continuingAfterTarget = state.freeRun || state.won || state.goalReachedAt !== null;
   const runningWithoutParts = !state.parts.length && levels[levelIndex].parts.length > 0;
   state.running = true;
@@ -3612,6 +3733,7 @@ el.runButton.addEventListener("click", () => {
 
 el.pauseButton.addEventListener("click", () => {
   if (state.running) {
+    playSound("pause", 1, true);
     state.running = false;
     state.paused = true;
     updatePauseButton();
@@ -3619,6 +3741,7 @@ el.pauseButton.addEventListener("click", () => {
     return;
   }
   if (state.paused) {
+    playSound("run", 1, true);
     state.running = true;
     state.paused = false;
     updatePauseButton();
@@ -3626,10 +3749,23 @@ el.pauseButton.addEventListener("click", () => {
     return;
   }
   setFeedback("Press Run to start the simulation.", "warning");
+  playSound("fail");
 });
 
-el.resetButton.addEventListener("click", () => resetLevel(true));
-el.clearButton.addEventListener("click", () => resetLevel(false));
+el.resetButton.addEventListener("click", () => {
+  playSound("reset", 1, true);
+  resetLevel(true);
+});
+el.clearButton.addEventListener("click", () => {
+  playSound("remove", 1, true);
+  resetLevel(false);
+});
+el.soundButton.addEventListener("click", () => {
+  sound.enabled = !sound.enabled;
+  saveSoundPreference();
+  updateSoundButton();
+  if (sound.enabled) playSound("toggle", 1, true);
+});
 window.addEventListener("keydown", (event) => {
   if (event.key !== "Delete" && event.key !== "Backspace") return;
   const tag = event.target && event.target.tagName ? event.target.tagName.toLowerCase() : "";
@@ -3638,11 +3774,13 @@ window.addEventListener("keydown", (event) => {
   removeSelectedPart();
 });
 el.prevLevel.addEventListener("click", () => {
+  playSound("ui", 1, true);
   const firstPlayable = firstPlayableLevelIndex();
   levelIndex = levelIndex > 0 && levelIndex !== firstPlayable ? levelIndex - 1 : levels.length - 1;
   resetLevel();
 });
 el.nextLevel.addEventListener("click", () => {
+  playSound("ui", 1, true);
   levelIndex = levelIndex < levels.length - 1 ? levelIndex + 1 : firstPlayableLevelIndex();
   resetLevel();
 });
@@ -3666,6 +3804,7 @@ const requestedLevel = Number(new URLSearchParams(window.location.search).get("l
 if (Number.isFinite(requestedLevel)) {
   levelIndex = Math.max(0, Math.min(levels.length - 1, requestedLevel - 1));
 }
+updateSoundButton();
 resetLevel();
 requestAnimationFrame(() => {
   applyLevelVisibility(levels[levelIndex]);

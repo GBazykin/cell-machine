@@ -299,6 +299,15 @@ meter {
   min-width: 74px;
 }
 
+.controls .sound-toggle {
+  flex: 1 1 92px;
+}
+
+.sound-toggle[aria-pressed="false"] {
+  color: var(--muted);
+  background: #f1f5f9;
+}
+
 .primary {
   border-color: var(--accent);
   background: var(--accent);
