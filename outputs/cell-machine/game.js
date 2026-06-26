@@ -106,7 +106,8 @@ function playSound(name, intensity = 1, force = false) {
   if (!audio || !sound.master) return;
   const now = audio.currentTime;
   const throttle = preset.throttle ?? 0.08;
-  if (!force && now - (sound.lastPlayed[name] || 0) < throttle) return;
+  const lastPlayed = sound.lastPlayed[name];
+  if (!force && lastPlayed !== undefined && now - lastPlayed < throttle) return;
   sound.lastPlayed[name] = now;
 
   const osc = audio.createOscillator();
