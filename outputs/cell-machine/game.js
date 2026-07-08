@@ -296,7 +296,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "You are ready to start Unit 1.",
-    hint: "Try dragging a part onto the membrane, then use the right arrow to begin Unit 1.",
+    hint: "Use this screen to learn the panels. You can skip it or step through the highlights, then start Unit 1.",
     timeout: 999,
     minRunTime: 1
   },
@@ -312,7 +312,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "Oxygen equilibrated across the membrane by simple diffusion. Small nonpolar molecules do not need ATP or channels.",
-    hint: "Just press Run. O2 diffuses through the membrane until both sides have similar amounts.",
+    hint: "No part is needed here. Press Run and let O2 cross the membrane until the inside and outside counts match.",
     timeout: 22,
     minRunTime: 6
   },
@@ -328,7 +328,7 @@ const levels = [
     startGradient: 30,
     startPotential: 0,
     success: "Glucose entered through a transporter. The cell gained fuel without spending ATP.",
-    hint: "Transporters need to bridge the membrane, just like channels. Add more than one if the glucose is spread out.",
+    hint: "Place glucose transporters in the membrane. More than one transporter helps when glucose molecules are spread across the outside.",
     timeout: 14,
     minRunTime: 4
   },
@@ -344,7 +344,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "The pumps spent ATP to build a gradient. That stored energy can power later work.",
-    hint: "Spread pumps across the membrane so ions can reach local pump zones."
+    hint: "Use several pumps across the membrane. Each pump only pulls nearby ions, so one pump cannot cover the whole surface."
   },
   {
     title: "Signal To Open",
@@ -358,7 +358,7 @@ const levels = [
     startGradient: 48,
     startPotential: 0,
     success: "The receptor activated the gate. Cells often convert outside signals into controlled transport.",
-    hint: "The receptor and gated channel need to be close together on the membrane.",
+    hint: "Place the receptor close to the gated channel. The gate opens only while a nearby receptor is active.",
     timeout: 12
   },
   {
@@ -373,7 +373,7 @@ const levels = [
     startGradient: 92,
     startPotential: 0,
     success: "ATP synthase harvested the gradient. This is the core energy trick of mitochondria and chloroplasts.",
-    hint: "ATP synthase must be embedded in the membrane and needs a strong gradient. Several synthases can harvest a spread-out proton pool faster.",
+    hint: "Put ATP synthase in the membrane. It makes ATP only when protons pass through it down the stored H+ gradient.",
     timeout: 18,
     minRunTime: 4
   },
@@ -390,7 +390,7 @@ const levels = [
     startGradient: 50,
     startPotential: 0,
     success: "Equal positive charge on both sides gives 0 mV. The colors match because neither side is electrically favored.",
-    hint: "At 0 mV, the inside and outside should hold about the same positive charge."
+    hint: "Aim for equal positive charge on both sides. If one side becomes redder or bluer than the other, the potential is drifting away from 0 mV."
   },
   {
     title: "Separate H+ Charge",
@@ -405,7 +405,7 @@ const levels = [
     startGradient: 25,
     startPotential: 0,
     success: "Pumping H+ out leaves the inside more negative. The compartment colors now show the charge separation.",
-    hint: "H+ pumps consume ATP only when visible protons pass outward."
+    hint: "Use H+ pumps to export protons. Each visible proton moved outward spends ATP and makes the inside more negative."
   },
   {
     title: "Resting Membrane",
@@ -420,7 +420,7 @@ const levels = [
     startGradient: 40,
     startPotential: -12,
     success: "K+ efflux makes the inside negative. This is a simplified resting membrane potential.",
-    hint: "K+ leaving the cell removes positive charge from the inside."
+    hint: "Place K+ channels in the membrane. K+ leaving the cytoplasm removes positive charge from inside and drives the voltage downward."
   },
   {
     title: "Depolarize",
@@ -435,7 +435,7 @@ const levels = [
     startGradient: 40,
     startPotential: -30,
     success: "Na+ influx depolarized the cell to about +40 mV. You built the core electrical move of an action potential.",
-    hint: "Na+ channels let outside sodium rush inward, making the inside more positive. Use several channels if the Na+ pool is spread out.",
+    hint: "Place Na+ channels where outside sodium can reach them. Na+ influx adds positive charge inside and drives the voltage upward.",
     timeout: 16,
     minRunTime: 4
   },
@@ -456,7 +456,7 @@ const levels = [
     achFreeLifetime: 8,
     achBoundLifetime: 4,
     success: "ACh opened ligand-gated Na+ entry and the membrane reached threshold. In real excitable cells this can trigger voltage-gated sodium channels nearby.",
-    hint: "Place ACh receptors in the membrane. They stay closed until ACh appears outside and binds.",
+    hint: "ACh appears after Run starts. Put ACh receptors in the membrane so bound ACh can open Na+ entry and reach threshold.",
     timeout: 22,
     minRunTime: 4
   },
@@ -477,7 +477,7 @@ const levels = [
     achFreeLifetime: 8,
     achBoundLifetime: 4,
     success: "ACh receptors brought the membrane to threshold; voltage-gated Na+ channels opened and then inactivated.",
-    hint: "ACh receptors provide the trigger. VNa gates open at -25 mV and inactivate near +35 mV.",
+    hint: "Use ACh receptors to get to threshold, then add VNa gates nearby for the spike. VNa opens near -25 mV and inactivates near +35 mV.",
     timeout: 26,
     minRunTime: 5
   },
@@ -494,7 +494,7 @@ const levels = [
     startGradient: 40,
     startPotential: 40,
     success: "Voltage-gated K+ efflux repolarized the membrane after the Na+ spike.",
-    hint: "Voltage K+ gates open at high voltage. K+ leaving removes positive charge from the inside.",
+    hint: "Place delayed K+ gates in the membrane. They open at high voltage so K+ efflux brings the voltage back down.",
     timeout: 20,
     minRunTime: 4
   },
@@ -511,7 +511,7 @@ const levels = [
     startGradient: 35,
     startPotential: 0,
     success: "The membrane hyperpolarized because voltage K+ gates remained open until low voltage closed them.",
-    hint: "Voltage K+ gates close below about -42 mV.",
+    hint: "Let delayed K+ gates keep exporting K+ until the membrane dips below rest. They close again near -42 mV.",
     timeout: 20,
     minRunTime: 4
   },
@@ -529,7 +529,7 @@ const levels = [
     startPotential: 30,
     gradientTarget: 80,
     success: "The Na+/K+ ATPase spent ATP to rebuild the Na+/K+ gradient and return voltage toward rest.",
-    hint: "The pump cycles only when three inside Na+ ions and two outside K+ ions reach its slots.",
+    hint: "Place Na+/K+ pumps where both substrates can reach them. A cycle needs three inside Na+ slots and two outside K+ slots filled.",
     timeout: 45,
     minRunTime: 6
   },
@@ -546,7 +546,7 @@ const levels = [
     startGradient: 70,
     startPotential: -45,
     success: "Leak current returned the cell from hyperpolarization toward the resting membrane potential.",
-    hint: "When the inside is too negative, a small K+ leak back inward moves the potential toward rest.",
+    hint: "Resting leak channels allow K+ to drift inward only when the membrane is too negative, nudging voltage back toward -30 mV.",
     timeout: 12
   },
   {
@@ -565,7 +565,7 @@ const levels = [
     achFreeLifetime: 11,
     achBoundLifetime: 3.5,
     success: "You built a simplified action potential: ACh-triggered threshold, spike, repolarization, hyperpolarization, and return to rest.",
-    hint: "Use ACh receptors for the trigger, VNa gates for the upstroke, voltage K+ gates for the fall, and leak current to settle near rest.",
+    hint: "Build the sequence in order: ACh receptor for the trigger, VNa for the upstroke, delayed K+ for the fall, then leak to settle near rest.",
     timeout: 48,
     minRunTime: 5.5
   },
@@ -582,7 +582,7 @@ const levels = [
     startGradient: 0,
     startPotential: 30,
     success: "The Na+/K+ pump repolarized the membrane by exporting one net positive charge each cycle.",
-    hint: "The pump only cycles when three inside Na+ ions and two outside K+ ions reach its slots.",
+    hint: "This level is pump-only. The Na+/K+ pump exports three Na+ and imports two K+, giving one net positive charge outward per cycle.",
     timeout: 60,
     minRunTime: 6
   },
@@ -606,7 +606,7 @@ const levels = [
     achReleaseSide: "left",
     vnaRecoverMv: -30,
     success: "The membrane spiked, recovered before the second ACh pulse, and spiked again.",
-    hint: "Use ACh receptors for both signals, VNa gates for spikes, K+ gates for repolarization, leak for settling, and the Na+/K+ pump to rebuild the ion distribution between pulses.",
+    hint: "Prepare for two ACh pulses. The first spike must recover before the second pulse, so include K+ gates, leak, and Na+/K+ pumps.",
     timeout: 62,
     minRunTime: 24
   },
@@ -627,8 +627,9 @@ const levels = [
     achBoundLifetime: 4,
     localVoltage: true,
     achReleaseSide: "left",
+    requireAchPropagationTrigger: true,
     success: "The local depolarization wave reached the rightmost membrane lane.",
-    hint: "Put ACh receptors near the left edge, then space VNa gates from left to right until the rightmost lane is recruited.",
+    hint: "ACh must bind a receptor in the left lane first. Then VNa gates in successive lanes can carry the wave to the right.",
     timeout: 50,
     minRunTime: 6
   },
@@ -636,10 +637,10 @@ const levels = [
     title: "Myelinated Propagation",
     tag: "Action Potential",
     prompt: "ACh enters from the left. Myelin insulates most of the membrane, so parts can only be placed in the exposed nodes of Ranvier.",
-    parts: ["acetylcholineReceptor", "voltageSodiumChannel", "delayedPotassiumChannel"],
+    parts: ["acetylcholineReceptor", "voltageSodiumChannel"],
     molecules: "propagationIons",
     targetLabel: "propagation",
-    target: 1,
+    target: 3,
     startAtp: 70,
     startGradient: 55,
     startPotential: -30,
@@ -649,12 +650,18 @@ const levels = [
     achBoundLifetime: 4,
     localVoltage: true,
     achReleaseSide: "left",
+    requireAchPropagationTrigger: true,
     myelinated: true,
     laneCount: 3,
     ranvierNodes: [0.06, 0.5, 0.94],
     nodeWidth: 120,
+    propagationIonSpecs: [
+      { kind: "sodium", count: 14, inside: false },
+      { kind: "potassium", count: 10, inside: true },
+      { kind: "potassium", count: 6, inside: false }
+    ],
     success: "The signal crossed the myelinated membrane and triggered the rightmost node.",
-    hint: "Parts can only be placed in the node gaps. Use VNa gates to carry the signal from node to node toward the right.",
+    hint: "Use the three Ranvier nodes only: ACh receptor at the left node, then VNa gates at left, middle, and right nodes.",
     timeout: 60,
     minRunTime: 6
   },
@@ -671,7 +678,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "Adrenaline bound the receptor. The liver cell has detected the fight-or-flight signal.",
-    hint: "Put the adrenaline receptor in the membrane where incoming adrenaline can bind.",
+    hint: "Put at least one beta-adrenergic receptor in the membrane. If several are placed, adrenaline only needs to bind one of them.",
     timeout: 18,
     minRunTime: 3
   },
@@ -688,7 +695,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "The G protein linked to the receptor and released its alpha subunit.",
-    hint: "Place the G protein close enough to the receptor for the link to form.",
+    hint: "Place the G protein next to an adrenaline receptor. The linked receptor must activate before the G alpha subunit can leave.",
     timeout: 20,
     minRunTime: 3
   },
@@ -705,7 +712,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "Adenylyl cyclase used ATP molecules to make cAMP.",
-    hint: "The G alpha subunit must dock on adenylyl cyclase before ATP can be converted into cAMP.",
+    hint: "Keep adenylyl cyclase reachable by the triangular G alpha subunit. It makes cAMP only after G alpha docks and ATP arrives.",
     timeout: 30,
     minRunTime: 4
   },
@@ -722,7 +729,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "Four cAMP molecules bound PKA. The catalytic subunits separated from the regulatory subunits.",
-    hint: "PKA belongs in the cytoplasm. Place it where cAMP molecules can reach its four binding slots.",
+    hint: "PKA needs four cAMP molecules: two slots on each regulatory subunit. Once all four fill, the catalytic triangles separate.",
     timeout: 34,
     minRunTime: 4
   },
@@ -739,7 +746,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "The released PKA catalytic subunits reached phosphorylase kinase, which used ATP to activate.",
-    hint: "Phosphorylase kinase can be far from PKA. Fill all four PKA cAMP slots so the catalytic subunits can travel to it.",
+    hint: "After PKA releases catalytic triangles, phosphorylase kinase attracts them into its triangular sockets and uses ATP to activate.",
     timeout: 38,
     minRunTime: 4
   },
@@ -756,7 +763,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "Glycogen was broken down into glucose. The liver cell has mobilized stored fuel.",
-    hint: "Build the chain in order: receptor, G protein, adenylyl cyclase, PKA, phosphorylase kinase, then glycogen phosphorylase near glycogen.",
+    hint: "Finish the cascade, then keep glycogen phosphorylase near the glycogen chain so glucose units are removed at its active center.",
     timeout: 60,
     minRunTime: 5
   }
@@ -777,6 +784,8 @@ const VK_OPEN_MV = 0;
 const VK_CLOSE_MV = -42;
 const RECEPTOR_RADIUS = 42;
 const PROPAGATION_LANES = 6;
+const RESERVOIR_RESPAWN_MARGIN = 34;
+const RESERVOIR_ENTRY_MARGIN = 26;
 
 function resetLevel(keepParts = false) {
   const level = levels[levelIndex];
@@ -800,6 +809,7 @@ function resetLevel(keepParts = false) {
     propagatedLanes: [],
     propagatedLaneEvents: [],
     propagationCursor: 0,
+    achTriggeredLanes: [],
     lanes: null,
     achReleased: false,
     achReleaseIndex: 0,
@@ -816,12 +826,14 @@ function resetLevel(keepParts = false) {
       hyperpolarized: false,
       rested: false
     },
+    sequenceEvents: {},
     doubleSpike: {
       firstSpike: false,
       repolarizedBeforeSecond: false,
       secondPulse: false,
       secondSpike: false
     },
+    doubleSpikeEvents: {},
     cascade: {
       receptor: false,
       gProtein: false,
@@ -928,7 +940,7 @@ function makeGlycogenUnits(seed) {
 function makePropagationMolecules(level, b) {
   const list = [];
   const laneCount = laneCountForLevel(level);
-  const specs = [
+  const specs = level.propagationIonSpecs || [
     { kind: "sodium", count: 10, inside: false },
     { kind: "potassium", count: 6, inside: true },
     { kind: "potassium", count: 6, inside: false }
@@ -1067,9 +1079,15 @@ function renderTutorialPanel(level) {
     </div>
     <div class="tutorial-controls">
       <button type="button" data-tutorial-action="prev" ${stepIndex === 0 ? "disabled" : ""}>Back</button>
+      <button type="button" data-tutorial-action="skip">Skip tutorial</button>
       <button type="button" class="primary" data-tutorial-action="next">${stepIndex === level.tutorialSteps.length - 1 ? "Start Unit 1" : "Next"}</button>
     </div>
   `;
+}
+
+function startFirstPlayableLevel() {
+  levelIndex = firstPlayableLevelIndex();
+  resetLevel();
 }
 
 function updatePauseButton() {
@@ -1128,10 +1146,10 @@ function targetText(level, gradientMetric) {
     const voltageMax = level.target + (level.tolerance || 4);
     return `${gradientMetric.label} ${Math.round(gradientMetric.value)} / ${level.gradientTarget || 55}; V ${Math.round(state.potential)} <= ${voltageMax} mV`;
   }
-  if (level.targetLabel === "sequence") return `Phases ${sequenceProgress()} / ${level.target}`;
-  if (level.targetLabel === "doubleSpike") return `Cycle ${doubleSpikeProgress()} / ${level.target}`;
+  if (level.targetLabel === "sequence") return sequenceTargetText(level);
+  if (level.targetLabel === "doubleSpike") return doubleSpikeTargetText(level);
   if (level.targetLabel === "cascade") return cascadeTargetText(level);
-  if (level.targetLabel === "propagation") return `Wave ${propagationProgress()} / ${laneCountForLevel()}`;
+  if (level.targetLabel === "propagation") return propagationTargetText();
   if (level.targetLabel === "equilibrium") {
     const counts = oxygenCounts(true);
     const total = counts.inside + counts.outside;
@@ -1151,9 +1169,37 @@ function sequenceProgress() {
   return ["threshold", "peak", "repolarized", "hyperpolarized", "rested"].filter((key) => state.sequence[key]).length;
 }
 
+function sequenceTargetText(level) {
+  const eventText = eventTimeText(state.sequenceEvents?.peak);
+  return eventText ? `Phases ${sequenceProgress()} / ${level.target}; AP ${eventText}` : `Phases ${sequenceProgress()} / ${level.target}; AP not yet`;
+}
+
 function doubleSpikeProgress() {
   if (!state.doubleSpike) return 0;
   return ["firstSpike", "repolarizedBeforeSecond", "secondSpike"].filter((key) => state.doubleSpike[key]).length;
+}
+
+function doubleSpikeTargetText(level) {
+  const first = eventTimeText(state.doubleSpikeEvents?.firstSpike);
+  const second = eventTimeText(state.doubleSpikeEvents?.secondSpike);
+  if (first && second) return `Cycle ${doubleSpikeProgress()} / ${level.target}; APs ${first}, ${second}`;
+  if (first) return `Cycle ${doubleSpikeProgress()} / ${level.target}; AP1 ${first}`;
+  return `Cycle ${doubleSpikeProgress()} / ${level.target}; AP not yet`;
+}
+
+function propagationTargetText() {
+  const latest = latestPropagatedLaneEvent();
+  const latestText = latest ? `; L${latest.lane + 1} ${eventTimeText(latest.time)}` : "; no lane yet";
+  return `Wave ${propagationProgress()} / ${laneCountForLevel()}${latestText}`;
+}
+
+function latestPropagatedLaneEvent() {
+  const events = state.propagatedLaneEvents || [];
+  return events.length ? events[events.length - 1] : null;
+}
+
+function eventTimeText(time) {
+  return Number.isFinite(time) ? `${time.toFixed(1)}s` : "";
 }
 
 function cascadeTargetText(level) {
@@ -1183,7 +1229,7 @@ function cascadeTargetValue(level) {
 
 function cascadeTargetRequired(level) {
   if (level.targetKey === "receptor") {
-    return Math.max(level.target, (state.parts || []).filter((part) => part.type === "betaAdrenergicReceptor").length);
+    return level.target;
   }
   if (level.targetKey === "gProtein") {
     return Math.max(level.target, (state.parts || []).filter((part) => part.type === "gProtein").length);
@@ -1212,6 +1258,7 @@ function trackPropagationWave(level) {
     advanced = false;
     const lane = propagationProgress();
     const laneVoltage = state.lanes[lane]?.potential ?? -Infinity;
+    if (!propagationTriggerSatisfied(level, lane)) return;
     if (laneVoltage < VNA_OPEN_MV || !laneHasVoltageSodiumChannel(lane)) return;
     recordPropagatedLane(lane);
     advanced = true;
@@ -1223,6 +1270,8 @@ function laneHasVoltageSodiumChannel(lane) {
 }
 
 function recordPropagatedLane(lane, part = null) {
+  const level = levels[levelIndex];
+  if (!propagationTriggerSatisfied(level, lane)) return false;
   const expectedLane = state.propagationCursor || 0;
   if (lane !== expectedLane) return false;
   if (part && !state.propagatedParts.includes(part.id)) state.propagatedParts.push(part.id);
@@ -1230,6 +1279,18 @@ function recordPropagatedLane(lane, part = null) {
   state.propagatedLaneEvents = [...(state.propagatedLaneEvents || []), { lane, time: state.time }];
   state.propagatedLanes = Array.from(new Set([...(state.propagatedLanes || []), lane])).sort((a, b) => a - b);
   return true;
+}
+
+function propagationTriggerSatisfied(level, lane) {
+  if (!level?.requireAchPropagationTrigger || lane !== 0) return true;
+  return (state.achTriggeredLanes || []).includes(0);
+}
+
+function markAChPropagationTrigger(part) {
+  const level = levels[levelIndex];
+  if (!level?.requireAchPropagationTrigger || level.targetLabel !== "propagation") return;
+  const lane = laneIndexForX(part.x);
+  if (!state.achTriggeredLanes.includes(lane)) state.achTriggeredLanes.push(lane);
 }
 
 function chargeCounts() {
@@ -1471,9 +1532,9 @@ function renderToolbox(parts) {
   }
   const level = levels[levelIndex];
   if (level.tutorial) {
-    el.partInfo.innerHTML = "<strong>Practice Parts</strong><p>Try hovering over these parts, then drag one onto the membrane. The first real puzzle begins on the next screen.</p>";
+    el.partInfo.innerHTML = levelTipHtml(level, "Practice Parts");
   } else {
-    el.partInfo.innerHTML = "<strong>Tip</strong><p>Parts work best when placed across the membrane. Pumps consume ATP; synthase needs a stored gradient.</p>";
+    el.partInfo.innerHTML = levelTipHtml(level);
   }
 }
 
@@ -1500,11 +1561,14 @@ el.tutorialPanel.addEventListener("click", (event) => {
     updateLevelUi();
     return;
   }
+  if (action === "skip") {
+    startFirstPlayableLevel();
+    return;
+  }
   if (action === "next") {
     const steps = levels[levelIndex].tutorialSteps || [];
     if ((state.tutorialStep || 0) >= steps.length - 1) {
-      levelIndex = firstPlayableLevelIndex();
-      resetLevel();
+      startFirstPlayableLevel();
       return;
     }
     state.tutorialStep = Math.min(steps.length - 1, (state.tutorialStep || 0) + 1);
@@ -1514,6 +1578,19 @@ el.tutorialPanel.addEventListener("click", (event) => {
 
 function partInfoHtml(part) {
   return `<strong>${part.name}</strong><p>${part.text}</p><p>${part.behavior}</p>`;
+}
+
+function levelTipHtml(level, title = "Tip") {
+  return `<strong>${escapeHtml(title)}</strong><p>${escapeHtml(level.hint || "Use the current target to decide which parts to place and when to press Run.")}</p>`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function setFeedback(message, tone) {
@@ -1593,6 +1670,43 @@ function isPartFullyInRanvierNode(level, type, x, b = board()) {
     const center = fraction * b.width;
     return x - partHalf >= center - nodeHalf && x + partHalf <= center + nodeHalf;
   });
+}
+
+function clampPartXForLevel(level, type, x, b = board()) {
+  const clamped = Math.max(70, Math.min(b.width - 70, x));
+  if (!level.myelinated) return clamped;
+  const intervals = ranvierPlacementIntervals(level, type, b);
+  if (!intervals.length) return clamped;
+  for (const interval of intervals) {
+    if (clamped >= interval.left && clamped <= interval.right) return clamped;
+  }
+  let nearest = intervals[0].left;
+  let nearestDistance = Math.abs(clamped - nearest);
+  for (const interval of intervals) {
+    for (const edge of [interval.left, interval.right]) {
+      const d = Math.abs(clamped - edge);
+      if (d < nearestDistance) {
+        nearest = edge;
+        nearestDistance = d;
+      }
+    }
+  }
+  return nearest;
+}
+
+function ranvierPlacementIntervals(level, type, b = board()) {
+  if (!level.myelinated) return [];
+  const nodeHalf = (level.nodeWidth || 96) / 2;
+  const partHalf = partWidth(type) / 2;
+  return (level.ranvierNodes || [])
+    .map((fraction) => {
+      const center = fraction * b.width;
+      return {
+        left: Math.max(70, center - nodeHalf + partHalf),
+        right: Math.min(b.width - 70, center + nodeHalf - partHalf)
+      };
+    })
+    .filter((interval) => interval.left <= interval.right);
 }
 
 function partWidth(type) {
@@ -1736,8 +1850,11 @@ function releaseScheduledAcetylcholine(level, b) {
     const x = fromLeft ? -32 - i * 8 : center + (i - (count - 1) / 2) * 18 + randomRange(-9, 9);
     const molecule = createMolecule("acetylcholine", x, false, b);
     molecule.y = fromLeft ? b.membraneY - 92 + (i - (count - 1) / 2) * 8 + randomRange(-4, 4) : -28 - i * 8;
-    molecule.vx = fromLeft ? randomRange(126, 164) : randomRange(-42, 42);
-    molecule.vy = fromLeft ? randomRange(-8, 18) : randomRange(122, 158);
+    molecule.vx = fromLeft ? achJetSpeedToCanvas(level, b, molecule.x) + randomRange(-10, 10) : randomRange(-42, 42);
+    molecule.vy = fromLeft ? randomRange(-8, 18) : achJetSpeedToMembrane(level, b, molecule.y) + randomRange(-12, 12);
+    molecule.jet = true;
+    molecule.jetFrom = fromLeft ? "left" : "top";
+    molecule.sourceEntryEdge = molecule.jetFrom;
     state.molecules.push(molecule);
   }
   state.achReleased = true;
@@ -1750,6 +1867,101 @@ function achReleaseSchedule(level) {
   const schedule = [level.achReleaseTime];
   if (level.secondAchReleaseTime) schedule.push(level.secondAchReleaseTime);
   return schedule;
+}
+
+function achFreeLifetime(level) {
+  return level.achFreeLifetime || 8;
+}
+
+function achJetTravelTime(level) {
+  return Math.max(1.2, Math.min(2.4, achFreeLifetime(level) * 0.35));
+}
+
+function achJetSpeedToMembrane(level, b, y) {
+  const targetY = b.membraneY - 92;
+  return Math.max(122, Math.min(680, (targetY - y) / achJetTravelTime(level)));
+}
+
+function achJetSpeedToCanvas(level, b, x) {
+  const targetX = Math.min(70, b.width * 0.1);
+  return Math.max(126, Math.min(520, (targetX - x) / achJetTravelTime(level)));
+}
+
+function achJetReachedOutsideMembrane(m, b) {
+  if (m.jetFrom === "left") return m.x >= Math.min(70, b.width * 0.1);
+  return m.y >= b.membraneY - 92;
+}
+
+function moleculeLeavesCanvas(m, b) {
+  return m.x < -RESERVOIR_RESPAWN_MARGIN || m.x > b.width + RESERVOIR_RESPAWN_MARGIN || m.y < -RESERVOIR_RESPAWN_MARGIN || m.y > b.height + RESERVOIR_RESPAWN_MARGIN;
+}
+
+function isFreeMovingMolecule(m) {
+  return !m.boundPump && !m.boundPart && !m.boundReceptor && !m.boundCyclase && !m.boundPka && !m.boundPhosphorylaseKinase;
+}
+
+function isIntentionalReservoirEntry(m, b) {
+  if (!m.jet) return false;
+  const enteringFromTop = m.y < 0 && m.vy > 0 && m.x > -RESERVOIR_RESPAWN_MARGIN && m.x < b.width + RESERVOIR_RESPAWN_MARGIN;
+  const enteringFromLeft = m.x < 0 && m.vx > 0 && m.y > -RESERVOIR_RESPAWN_MARGIN && m.y < b.height + RESERVOIR_RESPAWN_MARGIN;
+  return (m.kind === "acetylcholine" || m.kind === "adrenaline") && (enteringFromTop || enteringFromLeft);
+}
+
+function shouldRespawnFromReservoir(m, b) {
+  return isFreeMovingMolecule(m) && !isIntentionalReservoirEntry(m, b) && moleculeLeavesCanvas(m, b);
+}
+
+function reservoirRespawnInside(m, b) {
+  if (m.y > b.height + RESERVOIR_RESPAWN_MARGIN) return true;
+  if (m.y < -RESERVOIR_RESPAWN_MARGIN) return false;
+  return m.inside;
+}
+
+function respawnMoleculeFromReservoir(m, level, b) {
+  const sameLaneX = reservoirEntryX(m, level, b);
+  const respawnInside = reservoirRespawnInside(m, b);
+  const entryEdge = reservoirEntryEdge(m, b, respawnInside);
+  m.x = sameLaneX;
+  m.laneX = sameLaneX;
+  m.inside = respawnInside;
+  m.jet = false;
+  m.jetFrom = null;
+  m.boundPump = null;
+  m.pumpSupplyDrift = false;
+  m.membraneDelay = 0;
+  if (entryEdge === "left") {
+    m.x = -RESERVOIR_ENTRY_MARGIN;
+    m.y = Math.max(26, Math.min(b.membraneY - 36, b.membraneY - 92 + randomRange(-24, 24)));
+    m.vx = randomRange(126, 164);
+    m.vy = randomRange(-8, 18);
+  } else if (respawnInside) {
+    m.y = b.height + RESERVOIR_ENTRY_MARGIN;
+    m.vx = randomRange(-22, 22);
+    m.vy = -randomRange(20, 38);
+  } else {
+    m.y = -RESERVOIR_ENTRY_MARGIN;
+    m.vx = randomRange(-22, 22);
+    m.vy = randomRange(20, 38);
+  }
+}
+
+function reservoirEntryEdge(m, b, respawnInside) {
+  if (m.y > b.height + RESERVOIR_RESPAWN_MARGIN) return "bottom";
+  if (m.y < -RESERVOIR_RESPAWN_MARGIN) return "top";
+  if (!respawnInside && m.kind === "acetylcholine" && m.sourceEntryEdge === "left") return "left";
+  return respawnInside ? "bottom" : "top";
+}
+
+function reservoirEntryX(m, level, b) {
+  if (level.localVoltage && laneCountForLevel() > 1) {
+    const lane = laneIndexForX(m.laneX ?? m.x);
+    const laneWidth = b.width / laneCountForLevel();
+    const left = lane * laneWidth;
+    const right = left + laneWidth;
+    const padding = Math.min(32, laneWidth * 0.24);
+    return randomRange(left + padding, right - padding);
+  }
+  return randomRange(32, b.width - 32);
 }
 
 function moveMolecules(dt, level, b) {
@@ -1830,19 +2042,9 @@ function moveMolecules(dt, level, b) {
       m.vx += Math.sign((m.laneX || m.x) - m.x) * 16 * dt;
       m.vx = Math.max(-36, Math.min(36, m.vx));
     }
-    if (m.x < 28) {
-      m.x = 28;
-      m.vx = Math.abs(m.vx);
-    } else if (m.x > b.width - 28) {
-      m.x = b.width - 28;
-      m.vx = -Math.abs(m.vx);
-    }
-    if (m.y < 26 && !(m.jet && m.vy > 0)) {
-      m.y = 26;
-      m.vy = Math.abs(m.vy);
-    } else if (m.y > b.height - 26) {
-      m.y = b.height - 26;
-      m.vy = -Math.abs(m.vy);
+    if (shouldRespawnFromReservoir(m, b)) {
+      respawnMoleculeFromReservoir(m, level, b);
+      continue;
     }
 
     if (!m.inside && openPart && ionReachesPore(m, openPart, false, b)) {
@@ -1925,6 +2127,7 @@ function moveAcetylcholine(m, dt, b) {
     m.used = true;
     return;
   }
+  if (m.jet && achJetReachedOutsideMembrane(m, b)) m.jet = false;
 
   const receptor = nearestPart("acetylcholineReceptor", m.x, m.y, (part) => !part.boundACh);
   if (receptor && inLocalAttractionZone(m, receptor)) {
@@ -1938,6 +2141,7 @@ function moveAcetylcholine(m, dt, b) {
       receptor.boundACh = m;
       receptor.active = true;
       receptor.pulse = 0.7;
+      markAChPropagationTrigger(receptor);
       m.x = bindX;
       m.y = bindY;
       m.vx = 0;
@@ -1949,11 +2153,14 @@ function moveAcetylcholine(m, dt, b) {
     m.vx += randomRange(-28, 28) * dt;
     m.vy += randomRange(-18, 22) * dt;
   }
-  m.vx = Math.max(-62, Math.min(62, m.vx));
-  m.vy = Math.max(-66, Math.min(66, m.vy));
-  if (m.x < -60) m.vx = Math.abs(m.vx);
-  if (m.x > b.width - 28) m.vx = -Math.abs(m.vx);
-  if (m.y < -42) m.vy = Math.abs(m.vy);
+  const maxX = m.jet ? Math.max(164, Math.abs(m.vx) + 12) : 62;
+  const maxY = m.jet ? Math.max(166, Math.abs(m.vy) + 12) : 66;
+  m.vx = Math.max(-maxX, Math.min(maxX, m.vx));
+  m.vy = Math.max(-maxY, Math.min(maxY, m.vy));
+  if (shouldRespawnFromReservoir(m, b)) {
+    respawnMoleculeFromReservoir(m, level, b);
+    return;
+  }
   if (m.y > b.membraneY - 18) {
     m.y = b.membraneY - 18;
     m.vy = -Math.abs(m.vy) * 0.45;
@@ -2806,20 +3013,30 @@ function trackSequence(level) {
   }
   if (level.targetLabel !== "sequence") return;
   const seq = state.sequence;
-  if (!seq.threshold && state.potential >= -20) seq.threshold = true;
-  if (seq.threshold && !seq.peak && state.potential >= 30) seq.peak = true;
-  if (seq.peak && !seq.repolarized && state.potential <= -28) seq.repolarized = true;
-  if (seq.repolarized && !seq.hyperpolarized && state.potential <= -42) seq.hyperpolarized = true;
-  if (seq.hyperpolarized && !seq.rested && state.potential >= -36 && state.potential <= -24) seq.rested = true;
+  if (!seq.threshold && state.potential >= -20) markSequenceEvent("threshold");
+  if (seq.threshold && !seq.peak && state.potential >= 30) markSequenceEvent("peak");
+  if (seq.peak && !seq.repolarized && state.potential <= -28) markSequenceEvent("repolarized");
+  if (seq.repolarized && !seq.hyperpolarized && state.potential <= -42) markSequenceEvent("hyperpolarized");
+  if (seq.hyperpolarized && !seq.rested && state.potential >= -36 && state.potential <= -24) markSequenceEvent("rested");
 }
 
 function trackDoubleSpike(level) {
   const seq = state.doubleSpike;
   const secondTime = level.secondAchReleaseTime || Infinity;
-  if (!seq.firstSpike && state.time < secondTime && state.potential >= 30) seq.firstSpike = true;
-  if (seq.firstSpike && !seq.repolarizedBeforeSecond && state.time < secondTime && state.potential <= -28) seq.repolarizedBeforeSecond = true;
-  if (state.time >= secondTime) seq.secondPulse = true;
-  if (seq.repolarizedBeforeSecond && seq.secondPulse && !seq.secondSpike && state.potential >= 30) seq.secondSpike = true;
+  if (!seq.firstSpike && state.time < secondTime && state.potential >= 30) markDoubleSpikeEvent("firstSpike");
+  if (seq.firstSpike && !seq.repolarizedBeforeSecond && state.time < secondTime && state.potential <= -28) markDoubleSpikeEvent("repolarizedBeforeSecond");
+  if (state.time >= secondTime && !seq.secondPulse) markDoubleSpikeEvent("secondPulse");
+  if (seq.repolarizedBeforeSecond && seq.secondPulse && !seq.secondSpike && state.potential >= 30) markDoubleSpikeEvent("secondSpike");
+}
+
+function markSequenceEvent(key) {
+  state.sequence[key] = true;
+  if (!Number.isFinite(state.sequenceEvents[key])) state.sequenceEvents[key] = state.time;
+}
+
+function markDoubleSpikeEvent(key) {
+  state.doubleSpike[key] = true;
+  if (!Number.isFinite(state.doubleSpikeEvents[key])) state.doubleSpikeEvents[key] = state.time;
 }
 
 function draw() {
@@ -2849,6 +3066,7 @@ function drawBackground(b) {
   drawLipidBilayer(b);
   if (level.myelinated) drawMyelinSheath(b, level);
   if (level.localVoltage) drawLaneVoltageLabels(b);
+  if (level.targetLabel === "sequence" || level.targetLabel === "doubleSpike") drawActionPotentialEventBadges(b, level);
 
   ctx.fillStyle = "rgba(21, 32, 43, 0.58)";
   ctx.font = "700 15px Inter, sans-serif";
@@ -2919,6 +3137,7 @@ function drawLaneVoltageLabels(b) {
   const laneCount = laneCountForLevel();
   const laneW = b.width / laneCount;
   const y = level.myelinated ? b.membraneY + b.membraneH + 58 : b.membraneY + b.membraneH + 24;
+  const events = laneEventMap();
   ctx.save();
   ctx.font = "800 12px Inter, sans-serif";
   ctx.textBaseline = "middle";
@@ -2931,8 +3150,64 @@ function drawLaneVoltageLabels(b) {
     ctx.fill();
     ctx.fillStyle = "rgba(21, 32, 43, 0.72)";
     ctx.fillText(text, x, y);
+    const event = events.get(i);
+    if (event) drawLaneEventPill(x - 4, y + 15, i, event.time, laneW);
   }
   ctx.restore();
+}
+
+function laneEventMap() {
+  const map = new Map();
+  for (const event of state.propagatedLaneEvents || []) {
+    if (!map.has(event.lane)) map.set(event.lane, event);
+  }
+  return map;
+}
+
+function drawLaneEventPill(x, y, lane, time, laneW) {
+  const text = `L${lane + 1} AP ${eventTimeText(time)}`;
+  const w = Math.min(Math.max(64, laneW - 16), 84);
+  ctx.fillStyle = "rgba(13, 148, 136, 0.9)";
+  roundedRect(x, y, w, 20, 6);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "800 11px Inter, sans-serif";
+  ctx.fillText(text, x + 6, y + 10);
+}
+
+function drawActionPotentialEventBadges(b, level) {
+  const badges = actionPotentialBadges(level);
+  if (!badges.length) return;
+  ctx.save();
+  ctx.textBaseline = "middle";
+  ctx.font = "800 12px Inter, sans-serif";
+  const x = b.width - 172;
+  let y = b.membraneY + b.membraneH + 25;
+  for (const text of badges) {
+    ctx.fillStyle = "rgba(13, 148, 136, 0.92)";
+    roundedRect(x, y, 148, 22, 7);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(text, x + 9, y + 11);
+    y += 26;
+  }
+  ctx.restore();
+}
+
+function actionPotentialBadges(level) {
+  if (level.targetLabel === "sequence") {
+    const time = eventTimeText(state.sequenceEvents?.peak);
+    return time ? [`AP peak ${time}`] : [];
+  }
+  if (level.targetLabel === "doubleSpike") {
+    const badges = [];
+    const first = eventTimeText(state.doubleSpikeEvents?.firstSpike);
+    const second = eventTimeText(state.doubleSpikeEvents?.secondSpike);
+    if (first) badges.push(`AP 1 ${first}`);
+    if (second) badges.push(`AP 2 ${second}`);
+    return badges;
+  }
+  return [];
 }
 
 function drawLipidBilayer(b) {
@@ -3637,9 +3912,10 @@ function resizeCanvasToDisplay() {
 
 function anchorPartsToMembrane() {
   if (!state.parts) return;
+  const level = levels[levelIndex];
   const b = board();
   for (const part of state.parts) {
-    part.x = Math.max(70, Math.min(b.width - 70, part.x));
+    part.x = clampPartXForLevel(level, part.type, part.x, b);
     part.y = partYForPlacement(part.type, part.y, b);
   }
 }
@@ -3691,7 +3967,8 @@ canvas.addEventListener("pointermove", (event) => {
   pointer = screenToCanvas(event);
   if (drag && drag.part) {
     const b = board();
-    drag.part.x = Math.max(70, Math.min(b.width - 70, pointer.x));
+    const level = levels[levelIndex];
+    drag.part.x = clampPartXForLevel(level, drag.part.type, pointer.x, b);
     drag.part.y = partYForPlacement(drag.part.type, pointer.y, b);
     state.running = false;
     state.paused = false;
