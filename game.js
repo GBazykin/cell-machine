@@ -23,13 +23,109 @@ const el = {
   runButton: document.getElementById("runButton"),
   pauseButton: document.getElementById("pauseButton"),
   resetButton: document.getElementById("resetButton"),
+  removeButton: document.getElementById("removeButton"),
   clearButton: document.getElementById("clearButton"),
+  soundButton: document.getElementById("soundButton"),
   prevLevel: document.getElementById("prevLevel"),
   nextLevel: document.getElementById("nextLevel"),
   dropHint: document.getElementById("dropHint"),
   tutorialPanel: document.getElementById("tutorialPanel"),
   partInfo: document.getElementById("partInfo")
 };
+
+const sound = {
+  enabled: loadSoundPreference(),
+  ctx: null,
+  master: null,
+  lastPlayed: {}
+};
+
+const soundPresets = {
+  toggle: { freq: 640, endFreq: 920, type: "sine", duration: 0.11, volume: 0.09, throttle: 0 },
+  ui: { freq: 470, endFreq: 560, type: "triangle", duration: 0.08, volume: 0.06, throttle: 0.04 },
+  run: { freq: 260, endFreq: 520, type: "sine", duration: 0.16, volume: 0.08, throttle: 0.08 },
+  pause: { freq: 420, endFreq: 280, type: "sine", duration: 0.12, volume: 0.07, throttle: 0.08 },
+  reset: { freq: 310, endFreq: 230, type: "triangle", duration: 0.13, volume: 0.07, throttle: 0.08 },
+  install: { freq: 540, endFreq: 700, type: "triangle", duration: 0.1, volume: 0.07, throttle: 0.06 },
+  remove: { freq: 330, endFreq: 190, type: "triangle", duration: 0.12, volume: 0.07, throttle: 0.06 },
+  neutralDiffusion: { freq: 520, endFreq: 500, type: "sine", duration: 0.07, volume: 0.045, throttle: 0.16 },
+  transportIn: { freq: 720, endFreq: 420, type: "sine", duration: 0.09, volume: 0.055, throttle: 0.1 },
+  transportOut: { freq: 430, endFreq: 760, type: "sine", duration: 0.09, volume: 0.055, throttle: 0.1 },
+  pumpBind: { freq: 240, endFreq: 300, type: "square", duration: 0.055, volume: 0.045, throttle: 0.08 },
+  pumpCycle: { freq: 190, endFreq: 480, type: "sawtooth", duration: 0.17, volume: 0.07, throttle: 0.16 },
+  ligandRelease: { freq: 840, endFreq: 420, type: "triangle", duration: 0.18, volume: 0.07, throttle: 0.18 },
+  ligandBind: { freq: 620, endFreq: 620, type: "triangle", duration: 0.08, volume: 0.055, throttle: 0.1 },
+  proteinRelease: { freq: 210, endFreq: 390, type: "triangle", duration: 0.16, volume: 0.065, throttle: 0.12 },
+  dock: { freq: 360, endFreq: 520, type: "square", duration: 0.08, volume: 0.052, throttle: 0.12 },
+  camp: { freq: 920, endFreq: 1220, type: "sine", duration: 0.08, volume: 0.048, throttle: 0.08 },
+  phosphorylate: { freq: 760, endFreq: 1020, type: "triangle", duration: 0.13, volume: 0.065, throttle: 0.14 },
+  glycogen: { freq: 300, endFreq: 170, type: "square", duration: 0.075, volume: 0.05, throttle: 0.09 },
+  win: { freq: 520, endFreq: 1040, type: "sine", duration: 0.28, volume: 0.095, throttle: 0.3 },
+  fail: { freq: 220, endFreq: 150, type: "sawtooth", duration: 0.22, volume: 0.07, throttle: 0.25 }
+};
+
+function loadSoundPreference() {
+  try {
+    return localStorage.getItem("cellMachineSound") !== "off";
+  } catch (error) {
+    return true;
+  }
+}
+
+function saveSoundPreference() {
+  try {
+    localStorage.setItem("cellMachineSound", sound.enabled ? "on" : "off");
+  } catch (error) {
+    // Local storage can be unavailable in private or restricted browser contexts.
+  }
+}
+
+function updateSoundButton() {
+  if (!el.soundButton) return;
+  el.soundButton.textContent = sound.enabled ? "Sound on" : "Sound off";
+  el.soundButton.setAttribute("aria-pressed", sound.enabled ? "true" : "false");
+}
+
+function ensureAudioContext() {
+  if (!sound.enabled) return null;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return null;
+  if (!sound.ctx) {
+    sound.ctx = new AudioContext();
+    sound.master = sound.ctx.createGain();
+    sound.master.gain.value = 0.16;
+    sound.master.connect(sound.ctx.destination);
+  }
+  if (sound.ctx.state === "suspended") sound.ctx.resume();
+  return sound.ctx;
+}
+
+function playSound(name, intensity = 1, force = false) {
+  if (!sound.enabled) return;
+  const preset = soundPresets[name] || soundPresets.ui;
+  const audio = ensureAudioContext();
+  if (!audio || !sound.master) return;
+  const now = audio.currentTime;
+  const throttle = preset.throttle ?? 0.08;
+  const lastPlayed = sound.lastPlayed[name];
+  if (!force && lastPlayed !== undefined && now - lastPlayed < throttle) return;
+  sound.lastPlayed[name] = now;
+
+  const osc = audio.createOscillator();
+  const gain = audio.createGain();
+  const duration = preset.duration || 0.1;
+  const volume = (preset.volume || 0.05) * Math.max(0.25, Math.min(1.4, intensity));
+  osc.type = preset.type || "sine";
+  osc.frequency.setValueAtTime(preset.freq, now);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(20, preset.endFreq || preset.freq), now + duration);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(volume, now + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  osc.connect(gain);
+  gain.connect(sound.master);
+  osc.start(now);
+  osc.stop(now + duration + 0.02);
+}
 
 const partTypes = {
   channel: {
@@ -190,8 +286,8 @@ const levels = [
       ["Mission", "Read the goal, target, and meters in the left panel.", "mission"],
       ["Cell Board", "The canvas shows outside cell, membrane, and cytoplasm. Build the mechanism here.", "board"],
       ["Parts", "Drag parts from the right panel onto the membrane or into the workspace.", "parts"],
-      ["Run Controls", "Press Run to test the setup. Reset keeps parts and restarts molecules; Clear all removes parts.", "controls"],
-      ["Inspect And Edit", "Hover over a part to see how it behaves. Select a placed part and press Del to remove it.", "parts"]
+      ["Run Controls", "Press Run to test the setup. Reset keeps parts and restarts molecules; Remove deletes one selected part; Clear all removes everything.", "controls"],
+      ["Inspect And Edit", "Hover over a part to see how it behaves. Select a placed part and press Remove or Del to delete it.", "parts"]
     ],
     parts: ["channel", "transporter", "pump", "receptor", "gated"],
     molecules: "tutorial",
@@ -201,7 +297,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "You are ready to start Unit 1.",
-    hint: "Try dragging a part onto the membrane, then use the right arrow to begin Unit 1.",
+    hint: "Use this screen to learn the panels. You can skip it or step through the highlights, then start Unit 1.",
     timeout: 999,
     minRunTime: 1
   },
@@ -217,7 +313,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "Oxygen equilibrated across the membrane by simple diffusion. Small nonpolar molecules do not need ATP or channels.",
-    hint: "Just press Run. O2 diffuses through the membrane until both sides have similar amounts.",
+    hint: "No part is needed here. Press Run and let O2 cross the membrane until the inside and outside counts match.",
     timeout: 22,
     minRunTime: 6
   },
@@ -233,7 +329,7 @@ const levels = [
     startGradient: 30,
     startPotential: 0,
     success: "Glucose entered through a transporter. The cell gained fuel without spending ATP.",
-    hint: "Transporters need to bridge the membrane, just like channels. Add more than one if the glucose is spread out.",
+    hint: "Place glucose transporters in the membrane. More than one transporter helps when glucose molecules are spread across the outside.",
     timeout: 14,
     minRunTime: 4
   },
@@ -248,8 +344,8 @@ const levels = [
     startAtp: 90,
     startGradient: 0,
     startPotential: 0,
-    success: "The pump spent ATP to build a gradient. That stored energy can power later work.",
-    hint: "One pump can work, but two pumps build the gradient faster."
+    success: "The pumps spent ATP to build a gradient. That stored energy can power later work.",
+    hint: "Use several pumps across the membrane. Each pump only pulls nearby ions, so one pump cannot cover the whole surface."
   },
   {
     title: "Signal To Open",
@@ -263,7 +359,8 @@ const levels = [
     startGradient: 48,
     startPotential: 0,
     success: "The receptor activated the gate. Cells often convert outside signals into controlled transport.",
-    hint: "The receptor and gated channel need to be close together on the membrane."
+    hint: "Place the receptor close to the gated channel. The gate opens only while a nearby receptor is active.",
+    timeout: 12
   },
   {
     title: "Make ATP",
@@ -277,7 +374,7 @@ const levels = [
     startGradient: 92,
     startPotential: 0,
     success: "ATP synthase harvested the gradient. This is the core energy trick of mitochondria and chloroplasts.",
-    hint: "ATP synthase must be embedded in the membrane and needs a strong gradient. Several synthases can harvest a spread-out proton pool faster.",
+    hint: "Put ATP synthase in the membrane. It makes ATP only when protons pass through it down the stored H+ gradient.",
     timeout: 18,
     minRunTime: 4
   },
@@ -294,7 +391,7 @@ const levels = [
     startGradient: 50,
     startPotential: 0,
     success: "Equal positive charge on both sides gives 0 mV. The colors match because neither side is electrically favored.",
-    hint: "At 0 mV, the inside and outside should hold about the same positive charge."
+    hint: "Aim for equal positive charge on both sides. If one side becomes redder or bluer than the other, the potential is drifting away from 0 mV."
   },
   {
     title: "Separate H+ Charge",
@@ -309,7 +406,7 @@ const levels = [
     startGradient: 25,
     startPotential: 0,
     success: "Pumping H+ out leaves the inside more negative. The compartment colors now show the charge separation.",
-    hint: "H+ pumps consume ATP only when visible protons pass outward."
+    hint: "Use H+ pumps to export protons. Each visible proton moved outward spends ATP and makes the inside more negative."
   },
   {
     title: "Resting Membrane",
@@ -324,7 +421,7 @@ const levels = [
     startGradient: 40,
     startPotential: -12,
     success: "K+ efflux makes the inside negative. This is a simplified resting membrane potential.",
-    hint: "K+ leaving the cell removes positive charge from the inside."
+    hint: "Place K+ channels in the membrane. K+ leaving the cytoplasm removes positive charge from inside and drives the voltage downward."
   },
   {
     title: "Depolarize",
@@ -339,7 +436,7 @@ const levels = [
     startGradient: 40,
     startPotential: -30,
     success: "Na+ influx depolarized the cell to about +40 mV. You built the core electrical move of an action potential.",
-    hint: "Na+ channels let outside sodium rush inward, making the inside more positive. Use several channels if the Na+ pool is spread out.",
+    hint: "Place Na+ channels where outside sodium can reach them. Na+ influx adds positive charge inside and drives the voltage upward.",
     timeout: 16,
     minRunTime: 4
   },
@@ -360,7 +457,7 @@ const levels = [
     achFreeLifetime: 8,
     achBoundLifetime: 4,
     success: "ACh opened ligand-gated Na+ entry and the membrane reached threshold. In real excitable cells this can trigger voltage-gated sodium channels nearby.",
-    hint: "Place ACh receptors in the membrane. They stay closed until ACh appears outside and binds.",
+    hint: "ACh appears after Run starts. Put ACh receptors in the membrane so bound ACh can open Na+ entry and reach threshold.",
     timeout: 22,
     minRunTime: 4
   },
@@ -381,7 +478,7 @@ const levels = [
     achFreeLifetime: 8,
     achBoundLifetime: 4,
     success: "ACh receptors brought the membrane to threshold; voltage-gated Na+ channels opened and then inactivated.",
-    hint: "ACh receptors provide the trigger. VNa gates open at -25 mV and inactivate near +35 mV.",
+    hint: "Use ACh receptors to get to threshold, then add VNa gates nearby for the spike. VNa opens near -25 mV and inactivates near +35 mV.",
     timeout: 26,
     minRunTime: 5
   },
@@ -398,7 +495,7 @@ const levels = [
     startGradient: 40,
     startPotential: 40,
     success: "Voltage-gated K+ efflux repolarized the membrane after the Na+ spike.",
-    hint: "Voltage K+ gates open at high voltage. K+ leaving removes positive charge from the inside.",
+    hint: "Place delayed K+ gates in the membrane. They open at high voltage so K+ efflux brings the voltage back down.",
     timeout: 20,
     minRunTime: 4
   },
@@ -410,12 +507,12 @@ const levels = [
     molecules: "hyperIons",
     targetLabel: "potential",
     target: -45,
-    tolerance: 8,
+    tolerance: 10,
     startAtp: 58,
     startGradient: 35,
     startPotential: 0,
     success: "The membrane hyperpolarized because voltage K+ gates remained open until low voltage closed them.",
-    hint: "Voltage K+ gates close below about -42 mV.",
+    hint: "Let delayed K+ gates keep exporting K+ until the membrane dips below rest. They close again near -42 mV.",
     timeout: 20,
     minRunTime: 4
   },
@@ -433,7 +530,7 @@ const levels = [
     startPotential: 30,
     gradientTarget: 80,
     success: "The Na+/K+ ATPase spent ATP to rebuild the Na+/K+ gradient and return voltage toward rest.",
-    hint: "The pump cycles only when three inside Na+ ions and two outside K+ ions reach its slots.",
+    hint: "Place Na+/K+ pumps where both substrates can reach them. A cycle needs three inside Na+ slots and two outside K+ slots filled.",
     timeout: 45,
     minRunTime: 6
   },
@@ -450,7 +547,7 @@ const levels = [
     startGradient: 70,
     startPotential: -45,
     success: "Leak current returned the cell from hyperpolarization toward the resting membrane potential.",
-    hint: "When the inside is too negative, a small K+ leak back inward moves the potential toward rest.",
+    hint: "Resting leak channels allow K+ to drift inward only when the membrane is too negative, nudging voltage back toward -30 mV.",
     timeout: 12
   },
   {
@@ -465,11 +562,11 @@ const levels = [
     startGradient: 55,
     startPotential: -30,
     achReleaseTime: 2.2,
-    achReleaseCount: 8,
-    achFreeLifetime: 8,
+    achReleaseCount: 12,
+    achFreeLifetime: 11,
     achBoundLifetime: 3.5,
     success: "You built a simplified action potential: ACh-triggered threshold, spike, repolarization, hyperpolarization, and return to rest.",
-    hint: "Use ACh receptors for the trigger, VNa gates for the upstroke, voltage K+ gates for the fall, and leak current to settle near rest.",
+    hint: "Build the sequence in order: ACh receptor for the trigger, VNa for the upstroke, delayed K+ for the fall, then leak to settle near rest.",
     timeout: 48,
     minRunTime: 5.5
   },
@@ -486,7 +583,7 @@ const levels = [
     startGradient: 0,
     startPotential: 30,
     success: "The Na+/K+ pump repolarized the membrane by exporting one net positive charge each cycle.",
-    hint: "The pump only cycles when three inside Na+ ions and two outside K+ ions reach its slots.",
+    hint: "This level is pump-only. The Na+/K+ pump exports three Na+ and imports two K+, giving one net positive charge outward per cycle.",
     timeout: 60,
     minRunTime: 6
   },
@@ -510,7 +607,7 @@ const levels = [
     achReleaseSide: "left",
     vnaRecoverMv: -30,
     success: "The membrane spiked, recovered before the second ACh pulse, and spiked again.",
-    hint: "Use ACh receptors for both signals, VNa gates for spikes, K+ gates for repolarization, leak for settling, and the Na+/K+ pump to rebuild the ion distribution between pulses.",
+    hint: "Prepare for two ACh pulses. The first spike must recover before the second pulse, so include K+ gates, leak, and Na+/K+ pumps.",
     timeout: 62,
     minRunTime: 24
   },
@@ -526,40 +623,47 @@ const levels = [
     startGradient: 55,
     startPotential: -30,
     achReleaseTime: 2.2,
-    achReleaseCount: 8,
-    achFreeLifetime: 8,
+    achReleaseCount: 10,
+    achFreeLifetime: 10,
     achBoundLifetime: 4,
     localVoltage: true,
     achReleaseSide: "left",
+    requireAchPropagationTrigger: true,
     success: "The local depolarization wave reached the rightmost membrane lane.",
-    hint: "Put ACh receptors near the left edge, then space VNa gates from left to right until the rightmost lane is recruited.",
-    timeout: 42,
+    hint: "ACh must bind a receptor in the left lane first. Then VNa gates in successive lanes can carry the wave to the right.",
+    timeout: 50,
     minRunTime: 6
   },
   {
     title: "Myelinated Propagation",
     tag: "Action Potential",
     prompt: "ACh enters from the left. Myelin insulates most of the membrane, so parts can only be placed in the exposed nodes of Ranvier.",
-    parts: ["acetylcholineReceptor", "voltageSodiumChannel", "delayedPotassiumChannel"],
+    parts: ["acetylcholineReceptor", "voltageSodiumChannel"],
     molecules: "propagationIons",
     targetLabel: "propagation",
-    target: 1,
+    target: 3,
     startAtp: 70,
     startGradient: 55,
     startPotential: -30,
     achReleaseTime: 2.2,
-    achReleaseCount: 8,
-    achFreeLifetime: 8,
+    achReleaseCount: 10,
+    achFreeLifetime: 10,
     achBoundLifetime: 4,
     localVoltage: true,
     achReleaseSide: "left",
+    requireAchPropagationTrigger: true,
     myelinated: true,
     laneCount: 3,
     ranvierNodes: [0.06, 0.5, 0.94],
     nodeWidth: 120,
+    propagationIonSpecs: [
+      { kind: "sodium", count: 14, inside: false },
+      { kind: "potassium", count: 10, inside: true },
+      { kind: "potassium", count: 6, inside: false }
+    ],
     success: "The signal crossed the myelinated membrane and triggered the rightmost node.",
-    hint: "Parts can only be placed in the node gaps. Use VNa gates to carry the signal from node to node toward the right.",
-    timeout: 45,
+    hint: "Use the three Ranvier nodes only: ACh receptor at the left node, then VNa gates at left, middle, and right nodes.",
+    timeout: 60,
     minRunTime: 6
   },
   {
@@ -575,7 +679,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "Adrenaline bound the receptor. The liver cell has detected the fight-or-flight signal.",
-    hint: "Put the adrenaline receptor in the membrane where incoming adrenaline can bind.",
+    hint: "Put at least one beta-adrenergic receptor in the membrane. If several are placed, adrenaline only needs to bind one of them.",
     timeout: 18,
     minRunTime: 3
   },
@@ -592,7 +696,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "The G protein linked to the receptor and released its alpha subunit.",
-    hint: "Place the G protein close enough to the receptor for the link to form.",
+    hint: "Place the G protein next to an adrenaline receptor. The linked receptor must activate before the G alpha subunit can leave.",
     timeout: 20,
     minRunTime: 3
   },
@@ -609,7 +713,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "Adenylyl cyclase used ATP molecules to make cAMP.",
-    hint: "The G alpha subunit must dock on adenylyl cyclase before ATP can be converted into cAMP.",
+    hint: "Keep adenylyl cyclase reachable by the triangular G alpha subunit. It makes cAMP only after G alpha docks and ATP arrives.",
     timeout: 30,
     minRunTime: 4
   },
@@ -626,7 +730,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "Four cAMP molecules bound PKA. The catalytic subunits separated from the regulatory subunits.",
-    hint: "PKA belongs in the cytoplasm. Place it where cAMP molecules can reach its four binding slots.",
+    hint: "PKA needs four cAMP molecules: two slots on each regulatory subunit. Once all four fill, the catalytic triangles separate.",
     timeout: 34,
     minRunTime: 4
   },
@@ -643,7 +747,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "The released PKA catalytic subunits reached phosphorylase kinase, which used ATP to activate.",
-    hint: "Phosphorylase kinase can be far from PKA. Fill all four PKA cAMP slots so the catalytic subunits can travel to it.",
+    hint: "After PKA releases catalytic triangles, phosphorylase kinase attracts them into its triangular sockets and uses ATP to activate.",
     timeout: 38,
     minRunTime: 4
   },
@@ -660,7 +764,7 @@ const levels = [
     startGradient: 0,
     startPotential: 0,
     success: "Glycogen was broken down into glucose. The liver cell has mobilized stored fuel.",
-    hint: "Build the chain in order: receptor, G protein, adenylyl cyclase, PKA, phosphorylase kinase, then glycogen phosphorylase near glycogen.",
+    hint: "Finish the cascade, then keep glycogen phosphorylase near the glycogen chain so glucose units are removed at its active center.",
     timeout: 60,
     minRunTime: 5
   }
@@ -671,6 +775,7 @@ let levelIndex = 0;
 let lastTime = 0;
 let drag = null;
 let pointer = { x: 0, y: 0 };
+let selectedToolType = null;
 const PORE_REACH_X = 42;
 const LOCAL_ATTRACTION_X = 150;
 const PUMP_NA_OFFSETS = [-26, 0, 26];
@@ -681,9 +786,12 @@ const VK_OPEN_MV = 0;
 const VK_CLOSE_MV = -42;
 const RECEPTOR_RADIUS = 42;
 const PROPAGATION_LANES = 6;
+const RESERVOIR_RESPAWN_MARGIN = 34;
+const RESERVOIR_ENTRY_MARGIN = 26;
 
 function resetLevel(keepParts = false) {
   const level = levels[levelIndex];
+  selectedToolType = null;
   const keptParts = keepParts && state.parts ? state.parts.map(resetPart) : [];
   state = {
     running: false,
@@ -702,6 +810,9 @@ function resetLevel(keepParts = false) {
     potentialTrace: [],
     propagatedParts: [],
     propagatedLanes: [],
+    propagatedLaneEvents: [],
+    propagationCursor: 0,
+    achTriggeredLanes: [],
     lanes: null,
     achReleased: false,
     achReleaseIndex: 0,
@@ -718,12 +829,14 @@ function resetLevel(keepParts = false) {
       hyperpolarized: false,
       rested: false
     },
+    sequenceEvents: {},
     doubleSpike: {
       firstSpike: false,
       repolarizedBeforeSecond: false,
       secondPulse: false,
       secondSpike: false
     },
+    doubleSpikeEvents: {},
     cascade: {
       receptor: false,
       gProtein: false,
@@ -830,7 +943,7 @@ function makeGlycogenUnits(seed) {
 function makePropagationMolecules(level, b) {
   const list = [];
   const laneCount = laneCountForLevel(level);
-  const specs = [
+  const specs = level.propagationIonSpecs || [
     { kind: "sodium", count: 10, inside: false },
     { kind: "potassium", count: 6, inside: true },
     { kind: "potassium", count: 6, inside: false }
@@ -850,7 +963,7 @@ function makePropagationMolecules(level, b) {
 
 function moleculeSpecs(kind) {
   if (kind === "balancedIon") return [{ kind: "ion", count: 18, inside: false }, { kind: "ion", count: 18, inside: true }];
-  if (kind === "proton") return [{ kind: "proton", count: 18, inside: false }, { kind: "proton", count: 18, inside: true }];
+  if (kind === "proton") return [{ kind: "proton", count: 24, inside: false }, { kind: "proton", count: 6, inside: true }];
   if (kind === "balancedProton") return [{ kind: "proton", count: 10, inside: false }, { kind: "proton", count: 10, inside: true }];
   if (kind === "hPump") return [{ kind: "proton", count: 12, inside: false }, { kind: "proton", count: 12, inside: true }];
   if (kind === "restingIons") return [{ kind: "sodium", count: 14, inside: false }, { kind: "potassium", count: 10, inside: true }];
@@ -969,9 +1082,15 @@ function renderTutorialPanel(level) {
     </div>
     <div class="tutorial-controls">
       <button type="button" data-tutorial-action="prev" ${stepIndex === 0 ? "disabled" : ""}>Back</button>
+      <button type="button" data-tutorial-action="skip">Skip tutorial</button>
       <button type="button" class="primary" data-tutorial-action="next">${stepIndex === level.tutorialSteps.length - 1 ? "Start Unit 1" : "Next"}</button>
     </div>
   `;
+}
+
+function startFirstPlayableLevel() {
+  levelIndex = firstPlayableLevelIndex();
+  resetLevel();
 }
 
 function updatePauseButton() {
@@ -979,7 +1098,8 @@ function updatePauseButton() {
 }
 
 function potentialUiHiddenForLevel(level) {
-  return level.molecules === "adrenalineCascade" || level.tutorial;
+  const voltageTargets = ["potential", "reset", "sequence", "doubleSpike", "propagation"];
+  return level.tutorial || !voltageTargets.includes(level.targetLabel);
 }
 
 function applyLevelVisibility(level) {
@@ -1020,17 +1140,19 @@ function availableAtpCount() {
 
 function targetText(level, gradientMetric) {
   if (level.targetLabel === "tutorial") return state.won ? "Ready" : "Try the controls";
-  if (level.targetLabel === "gradient") return `${gradientMetric.label} ${Math.round(gradientMetric.value)} / ${level.target}`;
+  if (level.targetLabel === "gradient") {
+    return `${gradientMetric.label} ${Math.round(gradientMetric.value)} / ${level.target}`;
+  }
   if (level.targetLabel === "ATP") return `ATP ${Math.round(state.atp)} / ${level.target}`;
   if (level.targetLabel === "potential") return `V ${Math.round(state.potential)} / ${level.target} +/- ${level.tolerance || 4} mV`;
   if (level.targetLabel === "reset") {
     const voltageMax = level.target + (level.tolerance || 4);
     return `${gradientMetric.label} ${Math.round(gradientMetric.value)} / ${level.gradientTarget || 55}; V ${Math.round(state.potential)} <= ${voltageMax} mV`;
   }
-  if (level.targetLabel === "sequence") return `Phases ${sequenceProgress()} / ${level.target}`;
-  if (level.targetLabel === "doubleSpike") return `Cycle ${doubleSpikeProgress()} / ${level.target}`;
+  if (level.targetLabel === "sequence") return sequenceTargetText(level);
+  if (level.targetLabel === "doubleSpike") return doubleSpikeTargetText(level);
   if (level.targetLabel === "cascade") return cascadeTargetText(level);
-  if (level.targetLabel === "propagation") return `Rightmost lane ${rightmostLaneTriggered() ? "triggered" : "waiting"}`;
+  if (level.targetLabel === "propagation") return propagationTargetText();
   if (level.targetLabel === "equilibrium") {
     const counts = oxygenCounts(true);
     const total = counts.inside + counts.outside;
@@ -1050,9 +1172,37 @@ function sequenceProgress() {
   return ["threshold", "peak", "repolarized", "hyperpolarized", "rested"].filter((key) => state.sequence[key]).length;
 }
 
+function sequenceTargetText(level) {
+  const eventText = eventTimeText(state.sequenceEvents?.peak);
+  return eventText ? `Phases ${sequenceProgress()} / ${level.target}; AP ${eventText}` : `Phases ${sequenceProgress()} / ${level.target}; AP not yet`;
+}
+
 function doubleSpikeProgress() {
   if (!state.doubleSpike) return 0;
   return ["firstSpike", "repolarizedBeforeSecond", "secondSpike"].filter((key) => state.doubleSpike[key]).length;
+}
+
+function doubleSpikeTargetText(level) {
+  const first = eventTimeText(state.doubleSpikeEvents?.firstSpike);
+  const second = eventTimeText(state.doubleSpikeEvents?.secondSpike);
+  if (first && second) return `Cycle ${doubleSpikeProgress()} / ${level.target}; APs ${first}, ${second}`;
+  if (first) return `Cycle ${doubleSpikeProgress()} / ${level.target}; AP1 ${first}`;
+  return `Cycle ${doubleSpikeProgress()} / ${level.target}; AP not yet`;
+}
+
+function propagationTargetText() {
+  const latest = latestPropagatedLaneEvent();
+  const latestText = latest ? `; L${latest.lane + 1} ${eventTimeText(latest.time)}` : "; no lane yet";
+  return `Wave ${propagationProgress()} / ${laneCountForLevel()}${latestText}`;
+}
+
+function latestPropagatedLaneEvent() {
+  const events = state.propagatedLaneEvents || [];
+  return events.length ? events[events.length - 1] : null;
+}
+
+function eventTimeText(time) {
+  return Number.isFinite(time) ? `${time.toFixed(1)}s` : "";
 }
 
 function cascadeTargetText(level) {
@@ -1082,7 +1232,7 @@ function cascadeTargetValue(level) {
 
 function cascadeTargetRequired(level) {
   if (level.targetKey === "receptor") {
-    return Math.max(level.target, (state.parts || []).filter((part) => part.type === "betaAdrenergicReceptor").length);
+    return level.target;
   }
   if (level.targetKey === "gProtein") {
     return Math.max(level.target, (state.parts || []).filter((part) => part.type === "gProtein").length);
@@ -1096,9 +1246,54 @@ function cascadeTargetRequired(level) {
   return level.target;
 }
 
-function rightmostLaneTriggered() {
-  if (!state.propagatedLanes || !state.propagatedLanes.length) return 0;
-  return state.propagatedLanes.includes(laneCountForLevel() - 1);
+function propagationProgress() {
+  return Math.min(state.propagationCursor || 0, laneCountForLevel());
+}
+
+function signalPropagatedLeftToRight() {
+  return propagationProgress() >= laneCountForLevel();
+}
+
+function trackPropagationWave(level) {
+  if (level.targetLabel !== "propagation" || !level.localVoltage || !state.lanes) return;
+  let advanced = true;
+  while (advanced && propagationProgress() < laneCountForLevel()) {
+    advanced = false;
+    const lane = propagationProgress();
+    const laneVoltage = state.lanes[lane]?.potential ?? -Infinity;
+    if (!propagationTriggerSatisfied(level, lane)) return;
+    if (laneVoltage < VNA_OPEN_MV || !laneHasVoltageSodiumChannel(lane)) return;
+    recordPropagatedLane(lane);
+    advanced = true;
+  }
+}
+
+function laneHasVoltageSodiumChannel(lane) {
+  return (state.parts || []).some((part) => part.type === "voltageSodiumChannel" && laneIndexForX(part.x) === lane);
+}
+
+function recordPropagatedLane(lane, part = null) {
+  const level = levels[levelIndex];
+  if (!propagationTriggerSatisfied(level, lane)) return false;
+  const expectedLane = state.propagationCursor || 0;
+  if (lane !== expectedLane) return false;
+  if (part && !state.propagatedParts.includes(part.id)) state.propagatedParts.push(part.id);
+  state.propagationCursor = expectedLane + 1;
+  state.propagatedLaneEvents = [...(state.propagatedLaneEvents || []), { lane, time: state.time }];
+  state.propagatedLanes = Array.from(new Set([...(state.propagatedLanes || []), lane])).sort((a, b) => a - b);
+  return true;
+}
+
+function propagationTriggerSatisfied(level, lane) {
+  if (!level?.requireAchPropagationTrigger || lane !== 0) return true;
+  return (state.achTriggeredLanes || []).includes(0);
+}
+
+function markAChPropagationTrigger(part) {
+  const level = levels[levelIndex];
+  if (!level?.requireAchPropagationTrigger || level.targetLabel !== "propagation") return;
+  const lane = laneIndexForX(part.x);
+  if (!state.achTriggeredLanes.includes(lane)) state.achTriggeredLanes.push(lane);
 }
 
 function chargeCounts() {
@@ -1321,6 +1516,7 @@ function renderToolbox(parts) {
     card.className = "part-card";
     card.draggable = true;
     card.dataset.part = id;
+    if (selectedToolType === id) card.classList.add("is-selected");
     card.innerHTML = `
       <div class="part-icon" style="background:${part.color}">${part.short}</div>
       <div><strong>${part.name}</strong><span>${part.text}</span></div>
@@ -1330,7 +1526,11 @@ function renderToolbox(parts) {
     });
     card.addEventListener("pointerdown", (event) => {
       event.preventDefault();
-      drag = { type: id, fromToolbox: true };
+      showPartInfo(part);
+      selectedToolType = id;
+      updateToolboxSelection();
+      el.dropHint.textContent = "Tap the board to place the selected part, or drag it there.";
+      drag = { type: id, fromToolbox: true, overCanvas: false };
       pointer = screenToCanvas(event);
     });
     card.addEventListener("mouseenter", () => showPartInfo(part));
@@ -1340,14 +1540,20 @@ function renderToolbox(parts) {
   }
   const level = levels[levelIndex];
   if (level.tutorial) {
-    el.partInfo.innerHTML = "<strong>Practice Parts</strong><p>Try hovering over these parts, then drag one onto the membrane. The first real puzzle begins on the next screen.</p>";
+    el.partInfo.innerHTML = levelTipHtml(level, "Practice Parts");
   } else {
-    el.partInfo.innerHTML = "<strong>Tip</strong><p>Parts work best when placed across the membrane. Pumps consume ATP; synthase needs a stored gradient.</p>";
+    el.partInfo.innerHTML = levelTipHtml(level);
   }
 }
 
 function showPartInfo(part) {
   el.partInfo.innerHTML = partInfoHtml(part);
+}
+
+function updateToolboxSelection() {
+  for (const card of el.toolbox.querySelectorAll(".part-card")) {
+    card.classList.toggle("is-selected", card.dataset.part === selectedToolType);
+  }
 }
 
 el.toolbox.addEventListener("mousemove", (event) => {
@@ -1369,11 +1575,14 @@ el.tutorialPanel.addEventListener("click", (event) => {
     updateLevelUi();
     return;
   }
+  if (action === "skip") {
+    startFirstPlayableLevel();
+    return;
+  }
   if (action === "next") {
     const steps = levels[levelIndex].tutorialSteps || [];
     if ((state.tutorialStep || 0) >= steps.length - 1) {
-      levelIndex = firstPlayableLevelIndex();
-      resetLevel();
+      startFirstPlayableLevel();
       return;
     }
     state.tutorialStep = Math.min(steps.length - 1, (state.tutorialStep || 0) + 1);
@@ -1383,6 +1592,19 @@ el.tutorialPanel.addEventListener("click", (event) => {
 
 function partInfoHtml(part) {
   return `<strong>${part.name}</strong><p>${part.text}</p><p>${part.behavior}</p>`;
+}
+
+function levelTipHtml(level, title = "Tip") {
+  return `<strong>${escapeHtml(title)}</strong><p>${escapeHtml(level.hint || "Use the current target to decide which parts to place and when to press Run.")}</p>`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function setFeedback(message, tone) {
@@ -1444,6 +1666,7 @@ function addPart(type, x, y) {
   state.freeRun = false;
   updateLevelUi();
   setFeedback("Part installed. Press Run to test the assembly.", "");
+  playSound("install");
   return true;
 }
 
@@ -1461,6 +1684,43 @@ function isPartFullyInRanvierNode(level, type, x, b = board()) {
     const center = fraction * b.width;
     return x - partHalf >= center - nodeHalf && x + partHalf <= center + nodeHalf;
   });
+}
+
+function clampPartXForLevel(level, type, x, b = board()) {
+  const clamped = Math.max(70, Math.min(b.width - 70, x));
+  if (!level.myelinated) return clamped;
+  const intervals = ranvierPlacementIntervals(level, type, b);
+  if (!intervals.length) return clamped;
+  for (const interval of intervals) {
+    if (clamped >= interval.left && clamped <= interval.right) return clamped;
+  }
+  let nearest = intervals[0].left;
+  let nearestDistance = Math.abs(clamped - nearest);
+  for (const interval of intervals) {
+    for (const edge of [interval.left, interval.right]) {
+      const d = Math.abs(clamped - edge);
+      if (d < nearestDistance) {
+        nearest = edge;
+        nearestDistance = d;
+      }
+    }
+  }
+  return nearest;
+}
+
+function ranvierPlacementIntervals(level, type, b = board()) {
+  if (!level.myelinated) return [];
+  const nodeHalf = (level.nodeWidth || 96) / 2;
+  const partHalf = partWidth(type) / 2;
+  return (level.ranvierNodes || [])
+    .map((fraction) => {
+      const center = fraction * b.width;
+      return {
+        left: Math.max(70, center - nodeHalf + partHalf),
+        right: Math.min(b.width - 70, center + nodeHalf - partHalf)
+      };
+    })
+    .filter((interval) => interval.left <= interval.right);
 }
 
 function partWidth(type) {
@@ -1498,6 +1758,7 @@ function removeSelectedPart() {
   state.goalReachedAt = null;
   updateLevelUi();
   setFeedback(`${partTypes[part.type].name} removed.`, "");
+  playSound("remove");
 }
 
 function screenToCanvas(event) {
@@ -1506,6 +1767,11 @@ function screenToCanvas(event) {
     x: ((event.clientX - rect.left) / rect.width) * canvas.width,
     y: ((event.clientY - rect.top) / rect.height) * canvas.height
   };
+}
+
+function pointerInsideCanvas(event) {
+  const rect = canvas.getBoundingClientRect();
+  return event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
 }
 
 function partAt(x, y) {
@@ -1551,7 +1817,6 @@ function update(dt) {
       if (voltage <= (level.vnaRecoverMv ?? VK_CLOSE_MV)) part.inactivated = false;
       if (voltage >= VNA_INACTIVATE_MV) part.inactivated = true;
       part.active = voltage >= VNA_OPEN_MV && !part.inactivated;
-      if (part.active) markVoltageGateRecruited(part);
     }
     if (part.type === "delayedPotassiumChannel") {
       const voltage = partVoltage(part);
@@ -1589,6 +1854,7 @@ function releaseScheduledAdrenaline(level, b) {
   state.adrReleased = true;
   state.adrReleaseIndex = 1;
   setFeedback("Adrenaline jetted into the outside compartment.", "");
+  playSound("ligandRelease");
 }
 
 function releaseScheduledAcetylcholine(level, b) {
@@ -1603,19 +1869,118 @@ function releaseScheduledAcetylcholine(level, b) {
     const x = fromLeft ? -32 - i * 8 : center + (i - (count - 1) / 2) * 18 + randomRange(-9, 9);
     const molecule = createMolecule("acetylcholine", x, false, b);
     molecule.y = fromLeft ? b.membraneY - 92 + (i - (count - 1) / 2) * 8 + randomRange(-4, 4) : -28 - i * 8;
-    molecule.vx = fromLeft ? randomRange(126, 164) : randomRange(-42, 42);
-    molecule.vy = fromLeft ? randomRange(-8, 18) : randomRange(122, 158);
+    molecule.vx = fromLeft ? achJetSpeedToCanvas(level, b, molecule.x) + randomRange(-10, 10) : randomRange(-42, 42);
+    molecule.vy = fromLeft ? randomRange(-8, 18) : achJetSpeedToMembrane(level, b, molecule.y) + randomRange(-12, 12);
+    molecule.jet = true;
+    molecule.jetFrom = fromLeft ? "left" : "top";
+    molecule.sourceEntryEdge = molecule.jetFrom;
     state.molecules.push(molecule);
   }
   state.achReleased = true;
   state.achReleaseIndex = index + 1;
   setFeedback(level.achReleaseSide === "left" ? `ACh pulse ${state.achReleaseIndex} jetted in from the left.` : `ACh pulse ${state.achReleaseIndex} jetted into the outside compartment.`, "");
+  playSound("ligandRelease");
 }
 
 function achReleaseSchedule(level) {
   const schedule = [level.achReleaseTime];
   if (level.secondAchReleaseTime) schedule.push(level.secondAchReleaseTime);
   return schedule;
+}
+
+function achFreeLifetime(level) {
+  return level.achFreeLifetime || 8;
+}
+
+function achJetTravelTime(level) {
+  return Math.max(1.2, Math.min(2.4, achFreeLifetime(level) * 0.35));
+}
+
+function achJetSpeedToMembrane(level, b, y) {
+  const targetY = b.membraneY - 92;
+  return Math.max(122, Math.min(680, (targetY - y) / achJetTravelTime(level)));
+}
+
+function achJetSpeedToCanvas(level, b, x) {
+  const targetX = Math.min(70, b.width * 0.1);
+  return Math.max(126, Math.min(520, (targetX - x) / achJetTravelTime(level)));
+}
+
+function achJetReachedOutsideMembrane(m, b) {
+  if (m.jetFrom === "left") return m.x >= Math.min(70, b.width * 0.1);
+  return m.y >= b.membraneY - 92;
+}
+
+function moleculeLeavesCanvas(m, b) {
+  return m.x < -RESERVOIR_RESPAWN_MARGIN || m.x > b.width + RESERVOIR_RESPAWN_MARGIN || m.y < -RESERVOIR_RESPAWN_MARGIN || m.y > b.height + RESERVOIR_RESPAWN_MARGIN;
+}
+
+function isFreeMovingMolecule(m) {
+  return !m.boundPump && !m.boundPart && !m.boundReceptor && !m.boundCyclase && !m.boundPka && !m.boundPhosphorylaseKinase;
+}
+
+function isIntentionalReservoirEntry(m, b) {
+  if (!m.jet) return false;
+  const enteringFromTop = m.y < 0 && m.vy > 0 && m.x > -RESERVOIR_RESPAWN_MARGIN && m.x < b.width + RESERVOIR_RESPAWN_MARGIN;
+  const enteringFromLeft = m.x < 0 && m.vx > 0 && m.y > -RESERVOIR_RESPAWN_MARGIN && m.y < b.height + RESERVOIR_RESPAWN_MARGIN;
+  return (m.kind === "acetylcholine" || m.kind === "adrenaline") && (enteringFromTop || enteringFromLeft);
+}
+
+function shouldRespawnFromReservoir(m, b) {
+  return isFreeMovingMolecule(m) && !isIntentionalReservoirEntry(m, b) && moleculeLeavesCanvas(m, b);
+}
+
+function reservoirRespawnInside(m, b) {
+  if (m.y > b.height + RESERVOIR_RESPAWN_MARGIN) return true;
+  if (m.y < -RESERVOIR_RESPAWN_MARGIN) return false;
+  return m.inside;
+}
+
+function respawnMoleculeFromReservoir(m, level, b) {
+  const sameLaneX = reservoirEntryX(m, level, b);
+  const respawnInside = reservoirRespawnInside(m, b);
+  const entryEdge = reservoirEntryEdge(m, b, respawnInside);
+  m.x = sameLaneX;
+  m.laneX = sameLaneX;
+  m.inside = respawnInside;
+  m.jet = false;
+  m.jetFrom = null;
+  m.boundPump = null;
+  m.pumpSupplyDrift = false;
+  m.membraneDelay = 0;
+  if (entryEdge === "left") {
+    m.x = -RESERVOIR_ENTRY_MARGIN;
+    m.y = Math.max(26, Math.min(b.membraneY - 36, b.membraneY - 92 + randomRange(-24, 24)));
+    m.vx = randomRange(126, 164);
+    m.vy = randomRange(-8, 18);
+  } else if (respawnInside) {
+    m.y = b.height + RESERVOIR_ENTRY_MARGIN;
+    m.vx = randomRange(-22, 22);
+    m.vy = -randomRange(20, 38);
+  } else {
+    m.y = -RESERVOIR_ENTRY_MARGIN;
+    m.vx = randomRange(-22, 22);
+    m.vy = randomRange(20, 38);
+  }
+}
+
+function reservoirEntryEdge(m, b, respawnInside) {
+  if (m.y > b.height + RESERVOIR_RESPAWN_MARGIN) return "bottom";
+  if (m.y < -RESERVOIR_RESPAWN_MARGIN) return "top";
+  if (!respawnInside && m.kind === "acetylcholine" && m.sourceEntryEdge === "left") return "left";
+  return respawnInside ? "bottom" : "top";
+}
+
+function reservoirEntryX(m, level, b) {
+  if (level.localVoltage && laneCountForLevel() > 1) {
+    const lane = laneIndexForX(m.laneX ?? m.x);
+    const laneWidth = b.width / laneCountForLevel();
+    const left = lane * laneWidth;
+    const right = left + laneWidth;
+    const padding = Math.min(32, laneWidth * 0.24);
+    return randomRange(left + padding, right - padding);
+  }
+  return randomRange(32, b.width - 32);
 }
 
 function moveMolecules(dt, level, b) {
@@ -1669,6 +2034,7 @@ function moveMolecules(dt, level, b) {
       });
     }
     if (level.molecules === "resetIons" || level.molecules === "pumpRepolarizeIons" || level.molecules === "doubleSpikeIons") {
+      diffuseUnboundResetPumpSubstrate(m, dt, b);
       moveResetIon(m, dt, b);
     }
     if ((level.molecules === "returnIons" || level.molecules === "fullActionIons" || level.molecules === "doubleSpikeIons") && m.kind === "potassium" && !m.inside) {
@@ -1691,13 +2057,14 @@ function moveMolecules(dt, level, b) {
       m.vy += Math.sign(b.membraneY - m.y) * steerY * dt;
       m.vx = Math.max(-maxX, Math.min(maxX, m.vx));
       m.vy = Math.max(-maxY, Math.min(maxY, m.vy));
-    } else if (!m.inside) {
+    } else if (!m.inside && !m.pumpSupplyDrift) {
       m.vx += Math.sign((m.laneX || m.x) - m.x) * 16 * dt;
       m.vx = Math.max(-36, Math.min(36, m.vx));
     }
-    if (m.x < 28 || m.x > b.width - 28) m.vx *= -1;
-    if (m.y < 26 && !(m.jet && m.vy > 0)) m.vy *= -1;
-    if (m.y > b.height - 26) m.vy *= -1;
+    if (shouldRespawnFromReservoir(m, b)) {
+      respawnMoleculeFromReservoir(m, level, b);
+      continue;
+    }
 
     if (!m.inside && openPart && ionReachesPore(m, openPart, false, b)) {
       m.inside = true;
@@ -1716,6 +2083,7 @@ function moveMolecules(dt, level, b) {
       }
       state.flash = 0.25;
       markVoltageGateRecruited(openPart);
+      playSound(m.kind === "proton" ? "pumpCycle" : "transportIn");
     }
 
     if (level.molecules === "oxygen" && level.parts.length === 0) {
@@ -1778,6 +2146,7 @@ function moveAcetylcholine(m, dt, b) {
     m.used = true;
     return;
   }
+  if (m.jet && achJetReachedOutsideMembrane(m, b)) m.jet = false;
 
   const receptor = nearestPart("acetylcholineReceptor", m.x, m.y, (part) => !part.boundACh);
   if (receptor && inLocalAttractionZone(m, receptor)) {
@@ -1791,21 +2160,26 @@ function moveAcetylcholine(m, dt, b) {
       receptor.boundACh = m;
       receptor.active = true;
       receptor.pulse = 0.7;
+      markAChPropagationTrigger(receptor);
       m.x = bindX;
       m.y = bindY;
       m.vx = 0;
       m.vy = 0;
+      playSound("ligandBind");
       return;
     }
   } else {
     m.vx += randomRange(-28, 28) * dt;
     m.vy += randomRange(-18, 22) * dt;
   }
-  m.vx = Math.max(-62, Math.min(62, m.vx));
-  m.vy = Math.max(-66, Math.min(66, m.vy));
-  if (m.x < -60) m.vx = Math.abs(m.vx);
-  if (m.x > b.width - 28) m.vx = -Math.abs(m.vx);
-  if (m.y < -42) m.vy = Math.abs(m.vy);
+  const maxX = m.jet ? Math.max(164, Math.abs(m.vx) + 12) : 62;
+  const maxY = m.jet ? Math.max(166, Math.abs(m.vy) + 12) : 66;
+  m.vx = Math.max(-maxX, Math.min(maxX, m.vx));
+  m.vy = Math.max(-maxY, Math.min(maxY, m.vy));
+  if (shouldRespawnFromReservoir(m, b)) {
+    respawnMoleculeFromReservoir(m, level, b);
+    return;
+  }
   if (m.y > b.membraneY - 18) {
     m.y = b.membraneY - 18;
     m.vy = -Math.abs(m.vy) * 0.45;
@@ -1831,6 +2205,7 @@ function moveOxygenThroughMembrane(m, dt, b) {
     m.vx = Math.max(-52, Math.min(52, m.vx));
     m.membraneDelay = randomRange(0.4, 1.7);
     state.imported = oxygenCounts(true).inside;
+    playSound("neutralDiffusion");
   } else if (m.inside && m.y <= b.membraneY && difference < 0 && m.membraneDelay <= 0 && Math.random() < crossingChance * dt) {
     m.inside = false;
     m.vy = -Math.max(10, Math.abs(m.vy) * 0.72 + randomRange(4, 16));
@@ -1838,6 +2213,7 @@ function moveOxygenThroughMembrane(m, dt, b) {
     m.vx = Math.max(-52, Math.min(52, m.vx));
     m.membraneDelay = randomRange(0.4, 1.7);
     state.imported = oxygenCounts(true).inside;
+    playSound("neutralDiffusion");
   }
 }
 
@@ -1877,6 +2253,7 @@ function movePositiveOut(m, dt, b, partType, energyCost, onCross) {
       onCross();
       state.imported += 1;
       markVoltageGateRecruited(part);
+      playSound(partType === "protonPump" ? "pumpCycle" : "transportOut");
     }
   }
 }
@@ -1906,27 +2283,53 @@ function movePositiveIn(m, dt, b, partType, onCross) {
     onCross();
     state.imported += 1;
     markVoltageGateRecruited(part);
+    playSound("transportIn");
   }
 }
 
 function markVoltageGateRecruited(part) {
   if (!part) return;
-  if (part.type === "voltageSodiumChannel" && !state.propagatedParts.includes(part.id)) {
-    state.propagatedParts.push(part.id);
-    state.propagatedLanes = Array.from(new Set([...(state.propagatedLanes || []), laneIndexForX(part.x)])).sort((a, b) => a - b);
+  if (part.type === "voltageSodiumChannel") {
+    recordPropagatedLane(laneIndexForX(part.x), part);
   }
 }
 
 function moveResetIon(m, dt, b) {
   const slotType = m.kind === "sodium" && m.inside ? "boundNa" : m.kind === "potassium" && !m.inside ? "boundK" : null;
   if (!slotType || state.atp < 4) return;
-  const pump = m.boundPump ? state.parts.find((part) => part.id === m.boundPump) : bestPumpForIon(m, slotType);
+  const pump = m.boundPump ? state.parts.find((part) => part.id === m.boundPump) : bestPumpForIon(m, slotType, b);
   if (!pump) return;
 
   bindIonAtPump(m, pump, dt, b, slotType);
 
   if (pumpCycleReady(pump) && state.atp >= 4) {
     exchangePumpCycle(pump, b);
+  }
+}
+
+function diffuseUnboundResetPumpSubstrate(m, dt, b) {
+  const slotType = m.kind === "sodium" && m.inside ? "boundNa" : m.kind === "potassium" && !m.inside ? "boundK" : null;
+  m.pumpSupplyDrift = false;
+  if (!slotType || m.boundPump || state.atp < 4) return;
+  if (bestPumpForIon(m, slotType, b)) return;
+  mixResetPumpSubstrate(m, dt, b);
+  m.laneX = m.x;
+  m.pumpSupplyDrift = true;
+}
+
+function mixResetPumpSubstrate(m, dt, b) {
+  m.vx += randomRange(-72, 72) * dt;
+  m.vx += Math.sign(b.width / 2 - m.x) * 34 * dt;
+  m.vy += randomRange(-34, 34) * dt;
+  m.vx = Math.max(-86, Math.min(86, m.vx));
+  m.vy = Math.max(-54, Math.min(54, m.vy));
+  if (!m.inside && m.y > b.membraneY - 18) {
+    m.y = b.membraneY - 18;
+    m.vy = -Math.abs(m.vy);
+  }
+  if (m.inside && m.y < b.membraneY + b.membraneH + 18) {
+    m.y = b.membraneY + b.membraneH + 18;
+    m.vy = Math.abs(m.vy);
   }
 }
 
@@ -1950,11 +2353,12 @@ function pumpOccupancy(pump) {
   return pump.boundNa.filter(Boolean).length + pump.boundK.filter(Boolean).length;
 }
 
-function bestPumpForIon(m, slotType) {
+function bestPumpForIon(m, slotType, b) {
   let best = null;
   let bestScore = Infinity;
   for (const pump of state.parts.filter((part) => part.type === "sodiumPotassiumPump")) {
     if (!pumpHasOpenSlot(pump, slotType)) continue;
+    if (!ionInPumpAttractionZone(m, pump, slotType, b)) continue;
     const d = distance(m.x, m.y, pump.x, pump.y);
     const score = d - pumpOccupancy(pump) * 220;
     if (score < bestScore) {
@@ -1963,6 +2367,14 @@ function bestPumpForIon(m, slotType) {
     }
   }
   return best;
+}
+
+function ionInPumpAttractionZone(m, pump, slotType, b) {
+  if (slotType === "boundNa" && !m.inside) return false;
+  if (slotType === "boundK" && m.inside) return false;
+  const slotIndex = nearestOpenPumpSlot(m, pump, slotType, b);
+  if (slotIndex === -1) return false;
+  return Math.abs(m.x - pump.x) <= LOCAL_ATTRACTION_X;
 }
 
 function pumpSlotPosition(pump, slotType, index, b) {
@@ -1990,6 +2402,7 @@ function bindIonAtPump(m, pump, dt, b, slotType) {
     m.vy = 0;
     return;
   }
+  if (!ionInPumpAttractionZone(m, pump, slotType, b)) return;
 
   m.vx += Math.sign(target.x - m.x) * 168 * dt;
   m.vy += Math.sign(target.y - m.y) * 172 * dt;
@@ -2004,6 +2417,7 @@ function bindIonAtPump(m, pump, dt, b, slotType) {
     m.vx = 0;
     m.vy = 0;
     pump.pulse = 0.35;
+    playSound("pumpBind");
   }
 }
 
@@ -2048,6 +2462,7 @@ function exchangePumpCycle(pump, b) {
   state.gradient = Math.min(100, state.gradient + 6);
   state.imported += 5;
   state.flash = 0.25;
+  playSound("pumpCycle");
 }
 
 function moveIonTowardPump(m, part, dt, b, direction, onCross) {
@@ -2069,11 +2484,12 @@ function moveIonTowardPump(m, part, dt, b, direction, onCross) {
     onCross();
     state.imported += 1;
     state.flash = 0.25;
+    playSound(direction === "in" ? "transportIn" : "transportOut");
   }
 }
 
 function moveIonForPump(m, dt, b) {
-  const pump = nearestPart("pump", m.laneX || m.x, m.y);
+  const pump = nearestPart("pump", m.laneX || m.x, m.y, (part) => genericPumpCanAttractIon(m, part, b));
   if (!pump) {
     m.vx += Math.sign((m.laneX || m.x) - m.x) * 18 * dt;
     m.vx = Math.max(-34, Math.min(34, m.vx));
@@ -2102,8 +2518,15 @@ function moveIonForPump(m, dt, b) {
       state.gradient = Math.min(100, state.gradient + 5);
       state.imported = Math.round(state.gradient);
       state.flash = 0.25;
+      playSound("pumpCycle");
     }
   }
+}
+
+function genericPumpCanAttractIon(m, pump, b) {
+  if (!m.inside) return false;
+  const target = { x: pump.x, y: b.membraneY + b.membraneH + 18 };
+  return distance(m.x, m.y, target.x, target.y) <= LOCAL_ATTRACTION_X;
 }
 
 function partLaneTarget(part, molecule) {
@@ -2225,6 +2648,7 @@ function updateAdrenalineReceptorBinding(dt, receptor) {
   receptor.pulse = 0.6;
   receptor.boundAdrenaline = adrenaline;
   cascade.receptor = true;
+  playSound("ligandBind");
 }
 
 function updateGProteinActivation(dt, gProtein, receptor, b) {
@@ -2247,6 +2671,7 @@ function releaseGAlpha(gProtein, b) {
   alpha.vy = randomRange(16, 34);
   alpha.sourceGProtein = gProtein.id;
   state.molecules.push(alpha);
+  playSound("proteinRelease");
 }
 
 function updateGAlphaDocking(dt, cyclase, b) {
@@ -2263,6 +2688,7 @@ function updateGAlphaDocking(dt, cyclase, b) {
     alpha.boundCyclase = cyclase.id;
     alpha.used = true;
     cyclase.pulse = 0.5;
+    playSound("dock");
   }
 }
 
@@ -2289,6 +2715,7 @@ function maybeSpawnCamp(cyclase, b, dt) {
   molecule.vy = randomRange(34, 58);
   state.molecules.push(molecule);
   spawnEnergyProduct("pyrophosphate", cyclase.x + 18, target.y + 12, b);
+  playSound("camp");
 }
 
 function spawnEnergyProduct(kind, x, y, b) {
@@ -2339,6 +2766,7 @@ function updateAllPkaCampBinding(dt, b) {
       camp.boundPka = pka.id;
       camp.used = true;
       pka.pulse = 0.35;
+      playSound("ligandBind");
     }
   }
 
@@ -2382,6 +2810,7 @@ function releasePkaCatalyticSubunits(pka, b) {
     catalytic.sourcePka = pka.id;
     state.molecules.push(catalytic);
   });
+  playSound("proteinRelease");
 }
 
 function ensurePhosphorylaseKinaseSlots(phosphorylaseKinase) {
@@ -2409,6 +2838,7 @@ function updateAllCatalyticSubunits(dt, b) {
       catalytic.boundPhosphorylaseKinase = phosphorylaseKinase.id;
       catalytic.used = true;
       phosphorylaseKinase.pulse = 0.42;
+      playSound("dock");
     }
   }
 
@@ -2462,6 +2892,7 @@ function breakGlycogen(dt, phosphorylase, b) {
   cascade.glucose += 1;
   cascade.glucoseReleased += 1;
   phosphorylase.pulse = 0.55;
+  playSound("glycogen");
 }
 
 function pullGlycogenChainTowardPhosphorylase(release, dt) {
@@ -2519,6 +2950,7 @@ function phosphorylatePartWithAtp(dt, part, offsetX, offsetY, flag, b) {
   part.phosphateMarks = (part.phosphateMarks || 0) + 1;
   part.pulse = Math.max(part.pulse || 0, 0.55);
   spawnEnergyProduct("adp", target.x - 16, target.y + 10, b);
+  playSound("phosphorylate");
   return true;
 }
 
@@ -2549,6 +2981,7 @@ function nearestMolecule(predicate, x, y) {
 function checkWin(level) {
   updateElectricState();
   trackSequence(level);
+  trackPropagationWave(level);
   if (state.freeRun) return;
   const gradientMetric = levelGradientMetric(level);
   let goalReached = false;
@@ -2560,7 +2993,7 @@ function checkWin(level) {
   else if (level.targetLabel === "sequence") goalReached = sequenceProgress() >= level.target && Math.abs(state.potential + 30) <= 8;
   else if (level.targetLabel === "doubleSpike") goalReached = doubleSpikeProgress() >= level.target;
   else if (level.targetLabel === "cascade") goalReached = cascadeTargetValue(level) >= cascadeTargetRequired(level);
-  else if (level.targetLabel === "propagation") goalReached = rightmostLaneTriggered();
+  else if (level.targetLabel === "propagation") goalReached = signalPropagatedLeftToRight();
   else if (level.targetLabel === "equilibrium") {
     const counts = oxygenCounts(true);
     goalReached = Math.abs(counts.inside - counts.outside) <= 1;
@@ -2579,6 +3012,7 @@ function checkWin(level) {
     state.paused = false;
     updatePauseButton();
     setFeedback(level.success, "success");
+    playSound("win", 1, true);
   } else if (state.time >= (level.timeout || 8) && !state.won) {
     recordPotentialSample();
     updateMeters();
@@ -2587,6 +3021,7 @@ function checkWin(level) {
     state.running = false;
     state.paused = false;
     updatePauseButton();
+    playSound("fail");
   }
 }
 
@@ -2597,20 +3032,30 @@ function trackSequence(level) {
   }
   if (level.targetLabel !== "sequence") return;
   const seq = state.sequence;
-  if (!seq.threshold && state.potential >= -20) seq.threshold = true;
-  if (seq.threshold && !seq.peak && state.potential >= 30) seq.peak = true;
-  if (seq.peak && !seq.repolarized && state.potential <= -28) seq.repolarized = true;
-  if (seq.repolarized && !seq.hyperpolarized && state.potential <= -42) seq.hyperpolarized = true;
-  if (seq.hyperpolarized && !seq.rested && state.potential >= -36 && state.potential <= -24) seq.rested = true;
+  if (!seq.threshold && state.potential >= -20) markSequenceEvent("threshold");
+  if (seq.threshold && !seq.peak && state.potential >= 30) markSequenceEvent("peak");
+  if (seq.peak && !seq.repolarized && state.potential <= -28) markSequenceEvent("repolarized");
+  if (seq.repolarized && !seq.hyperpolarized && state.potential <= -42) markSequenceEvent("hyperpolarized");
+  if (seq.hyperpolarized && !seq.rested && state.potential >= -36 && state.potential <= -24) markSequenceEvent("rested");
 }
 
 function trackDoubleSpike(level) {
   const seq = state.doubleSpike;
   const secondTime = level.secondAchReleaseTime || Infinity;
-  if (!seq.firstSpike && state.time < secondTime && state.potential >= 30) seq.firstSpike = true;
-  if (seq.firstSpike && !seq.repolarizedBeforeSecond && state.time < secondTime && state.potential <= -28) seq.repolarizedBeforeSecond = true;
-  if (state.time >= secondTime) seq.secondPulse = true;
-  if (seq.repolarizedBeforeSecond && seq.secondPulse && !seq.secondSpike && state.potential >= 30) seq.secondSpike = true;
+  if (!seq.firstSpike && state.time < secondTime && state.potential >= 30) markDoubleSpikeEvent("firstSpike");
+  if (seq.firstSpike && !seq.repolarizedBeforeSecond && state.time < secondTime && state.potential <= -28) markDoubleSpikeEvent("repolarizedBeforeSecond");
+  if (state.time >= secondTime && !seq.secondPulse) markDoubleSpikeEvent("secondPulse");
+  if (seq.repolarizedBeforeSecond && seq.secondPulse && !seq.secondSpike && state.potential >= 30) markDoubleSpikeEvent("secondSpike");
+}
+
+function markSequenceEvent(key) {
+  state.sequence[key] = true;
+  if (!Number.isFinite(state.sequenceEvents[key])) state.sequenceEvents[key] = state.time;
+}
+
+function markDoubleSpikeEvent(key) {
+  state.doubleSpike[key] = true;
+  if (!Number.isFinite(state.doubleSpikeEvents[key])) state.doubleSpikeEvents[key] = state.time;
 }
 
 function draw() {
@@ -2625,8 +3070,9 @@ function draw() {
 }
 
 function drawBackground(b) {
+  const level = levels[levelIndex];
   updateElectricState();
-  if (levels[levelIndex].localVoltage) {
+  if (level.localVoltage) {
     drawLaneCompartments(b);
   } else {
     const colors = compartmentColors();
@@ -2637,17 +3083,18 @@ function drawBackground(b) {
   }
 
   drawLipidBilayer(b);
-  if (levels[levelIndex].myelinated) drawMyelinSheath(b, levels[levelIndex]);
-  if (levels[levelIndex].localVoltage) drawLaneVoltageLabels(b);
+  if (level.myelinated) drawMyelinSheath(b, level);
+  if (level.localVoltage) drawLaneVoltageLabels(b);
+  if (level.targetLabel === "sequence" || level.targetLabel === "doubleSpike") drawActionPotentialEventBadges(b, level);
 
   ctx.fillStyle = "rgba(21, 32, 43, 0.58)";
   ctx.font = "700 15px Inter, sans-serif";
   ctx.fillText("Outside cell", 22, 32);
   ctx.fillText("Cytoplasm", 22, b.height - 24);
-  if (!levels[levelIndex].localVoltage && levels[levelIndex].molecules !== "adrenalineCascade") ctx.fillText(`${Math.round(state.potential)} mV`, b.width - 86, b.membraneY + b.membraneH + 24);
+  if (!level.localVoltage && !potentialUiHiddenForLevel(level)) ctx.fillText(`${Math.round(state.potential)} mV`, b.width - 86, b.membraneY + b.membraneH + 24);
 
   drawCellOrganelles(b);
-  if (levels[levelIndex].tutorial) drawTutorialCallouts(b);
+  if (level.tutorial) drawTutorialCallouts(b);
 }
 
 function drawTutorialCallouts(b) {
@@ -2661,7 +3108,7 @@ function drawTutorialCallouts(b) {
     : target === "controls"
       ? [{ title: "Run, Reset, Clear", text: "Use the buttons in the left panel to test and revise.", x: b.width - 316, y: b.height - 98, w: 286 }]
       : target === "parts"
-        ? [{ title: "Practice Space", text: "Drag a part here, select it, and press Del to remove it.", x: b.width / 2 - 180, y: b.height - 96, w: 360 }]
+        ? [{ title: "Practice Space", text: "Drag a part here, select it, and press Remove or Del to delete it.", x: b.width / 2 - 180, y: b.height - 96, w: 360 }]
         : [];
   if (!labels.length) return;
   ctx.save();
@@ -2709,6 +3156,7 @@ function drawLaneVoltageLabels(b) {
   const laneCount = laneCountForLevel();
   const laneW = b.width / laneCount;
   const y = level.myelinated ? b.membraneY + b.membraneH + 58 : b.membraneY + b.membraneH + 24;
+  const events = laneEventMap();
   ctx.save();
   ctx.font = "800 12px Inter, sans-serif";
   ctx.textBaseline = "middle";
@@ -2721,8 +3169,64 @@ function drawLaneVoltageLabels(b) {
     ctx.fill();
     ctx.fillStyle = "rgba(21, 32, 43, 0.72)";
     ctx.fillText(text, x, y);
+    const event = events.get(i);
+    if (event) drawLaneEventPill(x - 4, y + 15, i, event.time, laneW);
   }
   ctx.restore();
+}
+
+function laneEventMap() {
+  const map = new Map();
+  for (const event of state.propagatedLaneEvents || []) {
+    if (!map.has(event.lane)) map.set(event.lane, event);
+  }
+  return map;
+}
+
+function drawLaneEventPill(x, y, lane, time, laneW) {
+  const text = `L${lane + 1} AP ${eventTimeText(time)}`;
+  const w = Math.min(Math.max(64, laneW - 16), 84);
+  ctx.fillStyle = "rgba(13, 148, 136, 0.9)";
+  roundedRect(x, y, w, 20, 6);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "800 11px Inter, sans-serif";
+  ctx.fillText(text, x + 6, y + 10);
+}
+
+function drawActionPotentialEventBadges(b, level) {
+  const badges = actionPotentialBadges(level);
+  if (!badges.length) return;
+  ctx.save();
+  ctx.textBaseline = "middle";
+  ctx.font = "800 12px Inter, sans-serif";
+  const x = b.width - 172;
+  let y = b.membraneY + b.membraneH + 25;
+  for (const text of badges) {
+    ctx.fillStyle = "rgba(13, 148, 136, 0.92)";
+    roundedRect(x, y, 148, 22, 7);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(text, x + 9, y + 11);
+    y += 26;
+  }
+  ctx.restore();
+}
+
+function actionPotentialBadges(level) {
+  if (level.targetLabel === "sequence") {
+    const time = eventTimeText(state.sequenceEvents?.peak);
+    return time ? [`AP peak ${time}`] : [];
+  }
+  if (level.targetLabel === "doubleSpike") {
+    const badges = [];
+    const first = eventTimeText(state.doubleSpikeEvents?.firstSpike);
+    const second = eventTimeText(state.doubleSpikeEvents?.secondSpike);
+    if (first) badges.push(`AP 1 ${first}`);
+    if (second) badges.push(`AP 2 ${second}`);
+    return badges;
+  }
+  return [];
 }
 
 function drawLipidBilayer(b) {
@@ -3427,9 +3931,10 @@ function resizeCanvasToDisplay() {
 
 function anchorPartsToMembrane() {
   if (!state.parts) return;
+  const level = levels[levelIndex];
   const b = board();
   for (const part of state.parts) {
-    part.x = Math.max(70, Math.min(b.width - 70, part.x));
+    part.x = clampPartXForLevel(level, part.type, part.x, b);
     part.y = partYForPlacement(part.type, part.y, b);
   }
 }
@@ -3470,6 +3975,10 @@ canvas.addEventListener("pointerdown", (event) => {
     state.paused = false;
     updateLevelUi();
     setFeedback(`${partTypes[p.type].name} selected.`, "");
+  } else if (selectedToolType && partTypes[selectedToolType]) {
+    addPart(selectedToolType, pointer.x, pointer.y);
+    selectedToolType = null;
+    updateToolboxSelection();
   } else if (state.selectedPartId) {
     state.selectedPartId = null;
     state.paused = false;
@@ -3481,7 +3990,8 @@ canvas.addEventListener("pointermove", (event) => {
   pointer = screenToCanvas(event);
   if (drag && drag.part) {
     const b = board();
-    drag.part.x = Math.max(70, Math.min(b.width - 70, pointer.x));
+    const level = levels[levelIndex];
+    drag.part.x = clampPartXForLevel(level, drag.part.type, pointer.x, b);
     drag.part.y = partYForPlacement(drag.part.type, pointer.y, b);
     state.running = false;
     state.paused = false;
@@ -3491,15 +4001,23 @@ canvas.addEventListener("pointermove", (event) => {
 });
 
 window.addEventListener("pointermove", (event) => {
-  if (drag && drag.fromToolbox) pointer = screenToCanvas(event);
+  if (drag && drag.fromToolbox && pointerInsideCanvas(event)) {
+    pointer = screenToCanvas(event);
+    drag.overCanvas = true;
+  }
 });
 
 window.addEventListener("pointerup", () => {
-  if (drag && drag.fromToolbox) addPart(drag.type, pointer.x, pointer.y);
+  if (drag && drag.fromToolbox && drag.overCanvas) {
+    addPart(drag.type, pointer.x, pointer.y);
+    selectedToolType = null;
+    updateToolboxSelection();
+  }
   drag = null;
 });
 
 el.runButton.addEventListener("click", () => {
+  playSound("run", 1, true);
   const continuingAfterTarget = state.freeRun || state.won || state.goalReachedAt !== null;
   const runningWithoutParts = !state.parts.length && levels[levelIndex].parts.length > 0;
   state.running = true;
@@ -3522,6 +4040,7 @@ el.runButton.addEventListener("click", () => {
 
 el.pauseButton.addEventListener("click", () => {
   if (state.running) {
+    playSound("pause", 1, true);
     state.running = false;
     state.paused = true;
     updatePauseButton();
@@ -3529,6 +4048,7 @@ el.pauseButton.addEventListener("click", () => {
     return;
   }
   if (state.paused) {
+    playSound("run", 1, true);
     state.running = true;
     state.paused = false;
     updatePauseButton();
@@ -3536,10 +4056,26 @@ el.pauseButton.addEventListener("click", () => {
     return;
   }
   setFeedback("Press Run to start the simulation.", "warning");
+  playSound("fail");
 });
 
-el.resetButton.addEventListener("click", () => resetLevel(true));
-el.clearButton.addEventListener("click", () => resetLevel(false));
+el.resetButton.addEventListener("click", () => {
+  playSound("reset", 1, true);
+  resetLevel(true);
+});
+el.clearButton.addEventListener("click", () => {
+  playSound("remove", 1, true);
+  resetLevel(false);
+});
+el.removeButton.addEventListener("click", () => {
+  removeSelectedPart();
+});
+el.soundButton.addEventListener("click", () => {
+  sound.enabled = !sound.enabled;
+  saveSoundPreference();
+  updateSoundButton();
+  if (sound.enabled) playSound("toggle", 1, true);
+});
 window.addEventListener("keydown", (event) => {
   if (event.key !== "Delete" && event.key !== "Backspace") return;
   const tag = event.target && event.target.tagName ? event.target.tagName.toLowerCase() : "";
@@ -3548,11 +4084,13 @@ window.addEventListener("keydown", (event) => {
   removeSelectedPart();
 });
 el.prevLevel.addEventListener("click", () => {
+  playSound("ui", 1, true);
   const firstPlayable = firstPlayableLevelIndex();
   levelIndex = levelIndex > 0 && levelIndex !== firstPlayable ? levelIndex - 1 : levels.length - 1;
   resetLevel();
 });
 el.nextLevel.addEventListener("click", () => {
+  playSound("ui", 1, true);
   levelIndex = levelIndex < levels.length - 1 ? levelIndex + 1 : firstPlayableLevelIndex();
   resetLevel();
 });
@@ -3576,6 +4114,7 @@ const requestedLevel = Number(new URLSearchParams(window.location.search).get("l
 if (Number.isFinite(requestedLevel)) {
   levelIndex = Math.max(0, Math.min(levels.length - 1, requestedLevel - 1));
 }
+updateSoundButton();
 resetLevel();
 requestAnimationFrame(() => {
   applyLevelVisibility(levels[levelIndex]);
