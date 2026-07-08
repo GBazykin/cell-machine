@@ -51,6 +51,8 @@ At all levels, pressing Run should be allowed even when no parts are installed.
 
 After a target is achieved, pressing Run again should allow the simulation to continue.
 
+Free-moving molecules and ligands that leave the canvas should be replaced from the surrounding reservoir rather than bouncing off the border. The replacement should be the same molecule type, should enter on the same side of the membrane, and in lane-based levels should stay in the same lane. Scheduled ligand jets such as ACh should remain intentional entry events rather than being converted into unrelated reservoir respawns.
+
 ### Inferred Assumptions
 
 The game is puzzle-like rather than score-attack-like. The reward is satisfying the biological target and seeing the mechanism work.
@@ -77,12 +79,14 @@ Reset restores the molecular/cellular setup to the initial state while keeping i
 
 Clear all removes all installed parts.
 
-Selected parts can be removed with the Delete key. The separate Remove button was explicitly removed.
+Selected parts can be removed with the Remove button or the Delete key.
 
 The left and right level navigation buttons wrap:
 
 - On the first playable level of Unit 1, the left arrow goes to the final level.
 - On the last level, the right arrow returns to the first level.
+
+The tutorial can be skipped. If the tutorial is used, it should proceed step by step with highlighted screen regions.
 
 Hovering over parts in the Parts panel should show explanations of each part’s behavior.
 
@@ -90,7 +94,7 @@ Hovering over parts in the Parts panel should show explanations of each part’s
 
 Part placement is mouse/touch driven, but exact mobile interaction details are not specified.
 
-Selection is needed because Delete removes the selected part.
+Selection is needed because Remove and Delete act on the selected part.
 
 ### Open Questions
 
@@ -132,6 +136,10 @@ All channels/gates should use consistent definitions for local attraction, actua
 
 Voltage-gated channels should be potential-dependent, with no arbitrary delay.
 
+In ACh-triggered propagation levels, the leftmost lane should not count as propagated unless ACh has actually bound a receptor there. Layouts with only voltage-gated Na+ channels may depolarize locally through stochastic ion motion, but should not satisfy the propagation objective without the ACh trigger.
+
+For the myelinated propagation level, parts should be restricted to the three nodes of Ranvier. Attempts to place or drag parts into myelinated regions should be rejected or snapped back into a valid node gap. That level currently uses ACh receptors and VNa gates; delayed K+ gates were not required for the stated objective and made the target unreliable.
+
 Unit 2 includes or discusses:
 
 - Adrenaline.
@@ -163,6 +171,8 @@ Mobile protein subunits should remain triangular while traveling and attaching.
 Activated proteins should have explicit triangular docking sockets/holes, not just labels or symbols drawn on top.
 
 Glycogen should be a long chain of circles. Glycogen phosphorylase should remove circles from chain ends one by one at an active center and convert them to glucose.
+
+For the first adrenaline-cascade receptor level, if the player places multiple beta-adrenergic receptors, binding adrenaline to any one receptor should be enough to satisfy the receptor target. Extra receptors should not silently raise the required target count.
 
 ### Inferred Assumptions
 
@@ -208,6 +218,8 @@ If membrane potential is 0 mV, charge should be balanced across compartments.
 
 The color of compartments should reflect electric potential or relevant charge balance, and colors should become the same when charge equalizes.
 
+In levels 1.16 and 1.18, the game should make it explicit when an action potential has occurred. The current operational definition is the existing spike threshold crossing near +30 mV. In levels 1.19 and 1.20, the same idea should be shown lane by lane, so each lane has its own visible action-potential occurrence marker and time.
+
 ### Inferred Assumptions
 
 Success is binary per level: the setup either achieves the target or does not.
@@ -243,11 +255,15 @@ The initial trigger of the action potential should use an external ACh event in 
 
 For propagation levels, ACh may enter from the left and the signal should propagate left to right.
 
+For propagation levels that use ACh as the initiating event, the ACh receptor trigger is required before the propagation target can advance. VNa-only configurations should not complete these levels.
+
 For spatial propagation levels, lanes should be explicit and lane colors should reflect lane-specific potential. In non-spatial levels, compartments remain global.
 
 For myelinated propagation, there should be three unsheathed regions: left, middle, and right. Lanes should match the nodes of Ranvier.
 
 No parts should be placeable in myelinated regions.
+
+The myelinated propagation level should require the signal to pass through the three Ranvier-node lanes. A current intended solution is ACh receptor at the left node and VNa gates at the left, middle, and right nodes.
 
 Unit 2 builds the adrenaline cascade:
 
@@ -294,6 +310,8 @@ Glycogen should be drawn as long chains of circles, not separate floating circle
 
 Proteins in Unit 2 should not rely only on text labels on the protein bodies. For example, text on PhK was explicitly rejected.
 
+Action-potential occurrence should be visibly marked when it happens. For whole-cell action-potential levels this can be an AP badge; for propagation levels it should be lane-specific badges such as lane AP times.
+
 ### Inferred Assumptions
 
 Visual clarity is more important than photorealism.
@@ -337,6 +355,10 @@ The app is meant to be usable without a build step.
 
 The Parts panel is both a palette and an explanatory reference through hover text.
 
+The right Parts panel should show a level-specific Tip when no individual part is being hovered. Tip text should be relevant to the current level's objective and mechanic, not a generic statement about all parts.
+
+The target readout may include concise event timing when relevant, such as AP timing in whole-cell action-potential levels or the latest triggered lane in propagation levels.
+
 ### Open Questions
 
 No main menu, save system, settings menu, or level-select menu has been specified.
@@ -347,15 +369,15 @@ No confirmed publication/testing UI exists beyond sharing the static app or GitH
 
 ### Confirmed Design Decisions
 
-No sound or music was specified in the conversation.
+Procedural sound effects have been added for game events such as UI actions, installing/removing parts, ligand release/binding, transport, pump cycles, protein docking, phosphorylation, glycogen processing, success, and failure.
+
+Sound should be controllable with a Sound button/toggle and should remember the user's preference locally.
 
 ### Inferred Assumptions
 
-The current design is silent.
+The game uses generated Web Audio sounds rather than external audio files.
 
 ### Open Questions
-
-Whether there should be sound effects for binding, transport, phosphorylation, success, or failure is unspecified.
 
 Whether classroom use should default to muted is unspecified.
 
@@ -366,7 +388,6 @@ Whether classroom use should default to muted is unspecified.
 The following were explicitly rejected or removed:
 
 - A global whole-cell flash for molecule movement through pumps/receptors/channels.
-- A separate Remove button after Delete-key removal was added.
 - The confusing “Charge” counter.
 - Generic, non-molecule-specific gradient counters.
 - Teleporting ions or molecules from far away into channels or pumps.
@@ -374,6 +395,7 @@ The following were explicitly rejected or removed:
 - Neighbor-propagation terms that cause spontaneous potential changes between lanes.
 - Restricting ions from moving sideways between lanes was tried and then explicitly reverted.
 - Allowing any part placement in myelinated regions.
+- Completing ACh-triggered propagation levels with VNa-only layouts and no ACh receptor trigger.
 - Membrane-potential counter and plot in the adrenaline cascade unit.
 - Vertical activation lines for adrenaline cascade proteins.
 - Text instructions written directly on proteins.
@@ -422,7 +444,7 @@ Known problems and recently reported issues from the conversation include:
 - The left panel/action-potential plot recently shuddered between visible and hidden states across levels. A fix was attempted by moving visibility updates out of the animation loop, but it still needs user visual confirmation.
 - Browser automation had difficulty with direct `file://` access, requiring localhost workarounds for inspection.
 - Local `git`, `gh`, `node`, and Python availability was inconsistent or missing in the working environment.
-- The GitHub repository upload used a compressed bundle workaround for `game.js`, which is not ideal for code editing.
+- Earlier GitHub repository upload attempts used a compressed bundle workaround for `game.js`, which was not ideal for code editing.
 - A standalone editable directory was later recreated with the readable files.
 - Level 14 was reported as unsolvable and the Na/K gradient there was suspected buggy.
 - Level 19 had reported mismatch between visible ion densities and potential, especially in lane/myelin contexts.

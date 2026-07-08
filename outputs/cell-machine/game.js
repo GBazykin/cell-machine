@@ -23,6 +23,7 @@ const el = {
   runButton: document.getElementById("runButton"),
   pauseButton: document.getElementById("pauseButton"),
   resetButton: document.getElementById("resetButton"),
+  removeButton: document.getElementById("removeButton"),
   clearButton: document.getElementById("clearButton"),
   soundButton: document.getElementById("soundButton"),
   prevLevel: document.getElementById("prevLevel"),
@@ -285,8 +286,8 @@ const levels = [
       ["Mission", "Read the goal, target, and meters in the left panel.", "mission"],
       ["Cell Board", "The canvas shows outside cell, membrane, and cytoplasm. Build the mechanism here.", "board"],
       ["Parts", "Drag parts from the right panel onto the membrane or into the workspace.", "parts"],
-      ["Run Controls", "Press Run to test the setup. Reset keeps parts and restarts molecules; Clear all removes parts.", "controls"],
-      ["Inspect And Edit", "Hover over a part to see how it behaves. Select a placed part and press Del to remove it.", "parts"]
+      ["Run Controls", "Press Run to test the setup. Reset keeps parts and restarts molecules; Remove deletes one selected part; Clear all removes everything.", "controls"],
+      ["Inspect And Edit", "Hover over a part to see how it behaves. Select a placed part and press Remove or Del to delete it.", "parts"]
     ],
     parts: ["channel", "transporter", "pump", "receptor", "gated"],
     molecules: "tutorial",
@@ -774,6 +775,7 @@ let levelIndex = 0;
 let lastTime = 0;
 let drag = null;
 let pointer = { x: 0, y: 0 };
+let selectedToolType = null;
 const PORE_REACH_X = 42;
 const LOCAL_ATTRACTION_X = 150;
 const PUMP_NA_OFFSETS = [-26, 0, 26];
@@ -789,6 +791,7 @@ const RESERVOIR_ENTRY_MARGIN = 26;
 
 function resetLevel(keepParts = false) {
   const level = levels[levelIndex];
+  selectedToolType = null;
   const keptParts = keepParts && state.parts ? state.parts.map(resetPart) : [];
   state = {
     running: false,
@@ -1513,6 +1516,7 @@ function renderToolbox(parts) {
     card.className = "part-card";
     card.draggable = true;
     card.dataset.part = id;
+    if (selectedToolType === id) card.classList.add("is-selected");
     card.innerHTML = `
       <div class="part-icon" style="background:${part.color}">${part.short}</div>
       <div><strong>${part.name}</strong><span>${part.text}</span></div>
@@ -1522,7 +1526,11 @@ function renderToolbox(parts) {
     });
     card.addEventListener("pointerdown", (event) => {
       event.preventDefault();
-      drag = { type: id, fromToolbox: true };
+      showPartInfo(part);
+      selectedToolType = id;
+      updateToolboxSelection();
+      el.dropHint.textContent = "Tap the board to place the selected part, or drag it there.";
+      drag = { type: id, fromToolbox: true, overCanvas: false };
       pointer = screenToCanvas(event);
     });
     card.addEventListener("mouseenter", () => showPartInfo(part));
@@ -1540,6 +1548,12 @@ function renderToolbox(parts) {
 
 function showPartInfo(part) {
   el.partInfo.innerHTML = partInfoHtml(part);
+}
+
+function updateToolboxSelection() {
+  for (const card of el.toolbox.querySelectorAll(".part-card")) {
+    card.classList.toggle("is-selected", card.dataset.part === selectedToolType);
+  }
 }
 
 el.toolbox.addEventListener("mousemove", (event) => {
@@ -1753,6 +1767,11 @@ function screenToCanvas(event) {
     x: ((event.clientX - rect.left) / rect.width) * canvas.width,
     y: ((event.clientY - rect.top) / rect.height) * canvas.height
   };
+}
+
+function pointerInsideCanvas(event) {
+  const rect = canvas.getBoundingClientRect();
+  return event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
 }
 
 function partAt(x, y) {
@@ -3089,7 +3108,7 @@ function drawTutorialCallouts(b) {
     : target === "controls"
       ? [{ title: "Run, Reset, Clear", text: "Use the buttons in the left panel to test and revise.", x: b.width - 316, y: b.height - 98, w: 286 }]
       : target === "parts"
-        ? [{ title: "Practice Space", text: "Drag a part here, select it, and press Del to remove it.", x: b.width / 2 - 180, y: b.height - 96, w: 360 }]
+        ? [{ title: "Practice Space", text: "Drag a part here, select it, and press Remove or Del to delete it.", x: b.width / 2 - 180, y: b.height - 96, w: 360 }]
         : [];
   if (!labels.length) return;
   ctx.save();
@@ -3956,6 +3975,10 @@ canvas.addEventListener("pointerdown", (event) => {
     state.paused = false;
     updateLevelUi();
     setFeedback(`${partTypes[p.type].name} selected.`, "");
+  } else if (selectedToolType && partTypes[selectedToolType]) {
+    addPart(selectedToolType, pointer.x, pointer.y);
+    selectedToolType = null;
+    updateToolboxSelection();
   } else if (state.selectedPartId) {
     state.selectedPartId = null;
     state.paused = false;
@@ -3978,11 +4001,18 @@ canvas.addEventListener("pointermove", (event) => {
 });
 
 window.addEventListener("pointermove", (event) => {
-  if (drag && drag.fromToolbox) pointer = screenToCanvas(event);
+  if (drag && drag.fromToolbox && pointerInsideCanvas(event)) {
+    pointer = screenToCanvas(event);
+    drag.overCanvas = true;
+  }
 });
 
 window.addEventListener("pointerup", () => {
-  if (drag && drag.fromToolbox) addPart(drag.type, pointer.x, pointer.y);
+  if (drag && drag.fromToolbox && drag.overCanvas) {
+    addPart(drag.type, pointer.x, pointer.y);
+    selectedToolType = null;
+    updateToolboxSelection();
+  }
   drag = null;
 });
 
@@ -4036,6 +4066,9 @@ el.resetButton.addEventListener("click", () => {
 el.clearButton.addEventListener("click", () => {
   playSound("remove", 1, true);
   resetLevel(false);
+});
+el.removeButton.addEventListener("click", () => {
+  removeSelectedPart();
 });
 el.soundButton.addEventListener("click", () => {
   sound.enabled = !sound.enabled;
