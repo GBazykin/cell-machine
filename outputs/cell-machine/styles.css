@@ -194,7 +194,7 @@ h2 {
 
 .tutorial-controls {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 0.9fr 1.2fr 1fr;
   gap: 6px;
 }
 
