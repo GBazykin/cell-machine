@@ -22,8 +22,8 @@ No build step is required. The game is a static web app made from:
 1. Use the tutorial to learn the layout.
 2. Drag parts from the right panel onto the cell board.
 3. Press **Run** to test the assembly.
-4. Use **Pause**, **Reset**, or **Clear all** to revise the setup.
-5. Select a placed part and press **Del** or **Backspace** to remove it.
+4. Use **Pause**, **Reset**, **Remove**, or **Clear all** to revise the setup.
+5. Select a placed part and press **Remove**, **Del**, or **Backspace** to remove it.
 6. Hover over parts in the parts panel to read what they do.
 
 ## How To Edit

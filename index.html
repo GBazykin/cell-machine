@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cell Machine</title>
-    <link rel="stylesheet" href="styles.css?v=130" />
+    <link rel="stylesheet" href="styles.css?v=134" />
   </head>
   <body>
     <main class="app-shell">
@@ -60,7 +60,9 @@
             <button id="runButton" class="primary">Run</button>
             <button id="pauseButton">Pause</button>
             <button id="resetButton">Reset</button>
+            <button id="removeButton">Remove</button>
             <button id="clearButton">Clear all</button>
+            <button id="soundButton" class="sound-toggle" type="button" aria-pressed="true">Sound on</button>
           </div>
           <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
         </aside>
@@ -75,12 +77,12 @@
           <div class="toolbox" id="toolbox" aria-label="Available cell parts"></div>
           <div class="part-info" id="partInfo">
             <strong>Tip</strong>
-            <p>Parts work best when placed across the membrane. Pumps consume ATP; synthase needs a stored gradient.</p>
+            <p>The tip changes with the current level and points to the mechanism needed for that puzzle.</p>
           </div>
         </aside>
       </section>
     </main>
 
-    <script src="game.js?v=130"></script>
+    <script src="game.js?v=140"></script>
   </body>
 </html>
