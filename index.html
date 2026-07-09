@@ -4,10 +4,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cell Machine</title>
-    <link rel="stylesheet" href="styles.css?v=134" />
+    <link rel="stylesheet" href="styles.css?v=136" />
   </head>
-  <body>
-    <main class="app-shell">
+  <body class="splash-active">
+    <section class="opening-splash" id="openingSplash" role="dialog" aria-modal="true" aria-label="Cell Machine birthday greeting">
+      <div class="opening-splash__content">
+        <img src="birthday-splash.png" alt="Cell Machine. С днем рождения, Надюха!" />
+        <div class="opening-splash__actions">
+          <button class="opening-splash__button" id="openingSplashTutorialButton" type="button">Tutorial</button>
+          <button class="primary opening-splash__button" id="openingSplashPlayButton" type="button">Play</button>
+        </div>
+      </div>
+    </section>
+
+    <main class="app-shell" id="appShell" inert aria-hidden="true">
       <section class="topbar" aria-label="Game header">
         <div>
           <p class="kicker">Cell Machine</p>
@@ -83,6 +93,6 @@
       </section>
     </main>
 
-    <script src="game.js?v=140"></script>
+    <script src="game.js?v=142"></script>
   </body>
 </html>
