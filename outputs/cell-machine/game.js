@@ -30,8 +30,44 @@ const el = {
   nextLevel: document.getElementById("nextLevel"),
   dropHint: document.getElementById("dropHint"),
   tutorialPanel: document.getElementById("tutorialPanel"),
-  partInfo: document.getElementById("partInfo")
+  partInfo: document.getElementById("partInfo"),
+  openingSplash: document.getElementById("openingSplash"),
+  openingSplashTutorialButton: document.getElementById("openingSplashTutorialButton"),
+  openingSplashPlayButton: document.getElementById("openingSplashPlayButton"),
+  appShell: document.getElementById("appShell")
 };
+
+function dismissOpeningSplash(focusTutorial = true) {
+  if (!el.openingSplash || el.openingSplash.classList.contains("is-dismissed")) return;
+  el.openingSplash.classList.add("is-dismissed");
+  el.openingSplash.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("splash-active");
+  el.appShell?.removeAttribute("inert");
+  el.appShell?.setAttribute("aria-hidden", "false");
+  if (focusTutorial) el.tutorialPanel?.querySelector("button:not([disabled])")?.focus();
+}
+
+function openTutorialFromSplash() {
+  levelIndex = Math.max(0, levels.findIndex((level) => level.tutorial));
+  resetLevel();
+  dismissOpeningSplash();
+}
+
+function startGameFromSplash() {
+  levelIndex = firstPlayableLevelIndex();
+  resetLevel();
+  dismissOpeningSplash(false);
+  el.runButton?.focus();
+}
+
+el.openingSplashTutorialButton?.addEventListener("click", openTutorialFromSplash);
+el.openingSplashPlayButton?.addEventListener("click", startGameFromSplash);
+window.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  if (!el.openingSplash || el.openingSplash.classList.contains("is-dismissed")) return;
+  event.preventDefault();
+  openTutorialFromSplash();
+});
 
 const sound = {
   enabled: loadSoundPreference(),
@@ -1320,6 +1356,33 @@ function oxygenCounts(usePosition = false) {
   return { inside, outside };
 }
 
+function oxygenSideForY(y, b) {
+  if (y >= b.membraneY + b.membraneH) return "inside";
+  if (y <= b.membraneY) return "outside";
+  return "membrane";
+}
+
+function syncOxygenSideWithPosition(m, b) {
+  const previousSide = m.oxygenSide || (m.inside ? "inside" : "outside");
+  const currentSide = oxygenSideForY(m.y, b);
+  if (currentSide === "membrane") return;
+
+  m.inside = currentSide === "inside";
+  m.oxygenSide = currentSide;
+  if (currentSide === previousSide) return;
+
+  if (currentSide === "inside") {
+    m.vy = Math.max(10, Math.abs(m.vy) * 0.72 + randomRange(4, 16));
+  } else {
+    m.vy = -Math.max(10, Math.abs(m.vy) * 0.72 + randomRange(4, 16));
+  }
+  m.vx += randomRange(-8, 8);
+  m.vx = Math.max(-52, Math.min(52, m.vx));
+  m.membraneDelay = randomRange(0.4, 1.7);
+  state.imported = oxygenCounts(true).inside;
+  playSound("neutralDiffusion");
+}
+
 function moleculeCounts(kinds) {
   const accepted = Array.isArray(kinds) ? kinds : [kinds];
   let inside = 0;
@@ -1943,6 +2006,7 @@ function respawnMoleculeFromReservoir(m, level, b) {
   m.x = sameLaneX;
   m.laneX = sameLaneX;
   m.inside = respawnInside;
+  if (m.kind === "oxygen") m.oxygenSide = respawnInside ? "inside" : "outside";
   m.jet = false;
   m.jetFrom = null;
   m.boundPump = null;
@@ -2197,24 +2261,7 @@ function moveOxygenThroughMembrane(m, dt, b) {
   m.vx = Math.max(-52, Math.min(52, m.vx));
   m.vy = Math.max(-52, Math.min(52, m.vy));
 
-  const crossingChance = Math.min(0.95, 0.35 + Math.abs(difference) * 0.03) * (m.diffusionBias || 1);
-  if (!m.inside && m.y >= b.membraneY + b.membraneH && difference > 0 && m.membraneDelay <= 0 && Math.random() < crossingChance * dt) {
-    m.inside = true;
-    m.vy = Math.max(10, Math.abs(m.vy) * 0.72 + randomRange(4, 16));
-    m.vx += randomRange(-8, 8);
-    m.vx = Math.max(-52, Math.min(52, m.vx));
-    m.membraneDelay = randomRange(0.4, 1.7);
-    state.imported = oxygenCounts(true).inside;
-    playSound("neutralDiffusion");
-  } else if (m.inside && m.y <= b.membraneY && difference < 0 && m.membraneDelay <= 0 && Math.random() < crossingChance * dt) {
-    m.inside = false;
-    m.vy = -Math.max(10, Math.abs(m.vy) * 0.72 + randomRange(4, 16));
-    m.vx += randomRange(-8, 8);
-    m.vx = Math.max(-52, Math.min(52, m.vx));
-    m.membraneDelay = randomRange(0.4, 1.7);
-    state.imported = oxygenCounts(true).inside;
-    playSound("neutralDiffusion");
-  }
+  syncOxygenSideWithPosition(m, b);
 }
 
 function movePositiveOut(m, dt, b, partType, energyCost, onCross) {
@@ -4116,6 +4163,7 @@ if (Number.isFinite(requestedLevel)) {
 }
 updateSoundButton();
 resetLevel();
+el.openingSplashTutorialButton?.focus();
 requestAnimationFrame(() => {
   applyLevelVisibility(levels[levelIndex]);
   updateMeters();

@@ -236,6 +236,8 @@ Exact target wording for every level has been repeatedly adjusted and remains a 
 
 ### Confirmed Design Decisions
 
+The Cell Machine birthday artwork should appear as an opening splash on each fresh page load. It offers a Tutorial button that opens the guided tutorial and a Play button that skips directly to Unit 1 Level 1.
+
 A tutorial should appear before the first level. It should be step-by-step, highlight the part of the screen being discussed, and grey out the rest.
 
 Unit 1 starts with simpler membrane mechanics and builds toward action potentials:
@@ -330,6 +332,7 @@ No accessibility requirements for color-blind users have been specified.
 
 The app layout includes:
 
+- A full-screen opening artwork with Tutorial and Play buttons.
 - A left mission/status panel.
 - A central simulation board/canvas.
 - A right Parts panel.
